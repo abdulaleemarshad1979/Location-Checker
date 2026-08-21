@@ -1,17 +1,24 @@
-# Location Checker & Telemetry Suite
+# NETRA - THE EYE
+### Advanced Telemetry, Location & Surveillance Operations Platform
 
 > ⚠️ **DISCLAIMER: FOR EDUCATIONAL & RESEARCH PURPOSES ONLY**
 > 
-> This software is developed strictly for **educational, security research, and authorized testing purposes**. It is designed to demonstrate web telemetry mechanisms, device permissions API, geolocation handling, and decoy URL routing in modern web browsers. 
+> **NETRA - THE EYE** is developed strictly for **educational, security research, and authorized testing purposes**. It is designed to demonstrate web browser telemetry mechanisms, device permission handling, geolocation APIs, and decoy URL routing in modern web applications.
 > 
 > **Unauthorized tracking of individuals without explicit consent is illegal and unethical.** The developer assumes no responsibility or liability for misuse or damage caused by this program.
+
+---
+
+## 👁️ About NETRA - THE EYE
+
+**NETRA** (Sanskrit for *"Eye"*) is a modern web application designed to collect high-fidelity telemetry metrics through customizable decoy pages (YouTube videos, weather forecast pages, or custom site embeds).
 
 ---
 
 ## 📌 Features
 
 - 📍 **GPS & Geolocation Tracking**: Real-time Leaflet map visualization of target locations.
-- 🌐 **Instant IP Geolocation Fallback**: Fallback IP lookup (City, Region, Country, Carrier/ISP) for zero-permission location reporting.
+- 🌐 **Instant IP Geolocation Fallback**: Zero-permission IP lookup (City, Region, Country, Carrier/ISP) for immediate location reporting.
 - 🔋 **Mobile Battery Telemetry**: Battery percentage indicator, charging status, and power state monitoring.
 - 📱 **Mobile & Device Specifications**: Operating System (Android/iOS), Browser, Screen Resolution, Network Type (4G/Wi-Fi), Memory, and Hardware Cores.
 - 📷 **HD Camera Photo Snapshots**: 1080p camera snapshot capture with iOS Safari & Android mobile browser compatibility.
