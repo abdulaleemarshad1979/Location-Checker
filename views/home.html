@@ -702,29 +702,48 @@
             const template = templateSelect.value;
 
             if (template === 'instagram') {
-                let link = `${baseUrl}/instagram?user=${encodeURIComponent(igUserInput.value || 'trending_reels')}`;
-                if (igUrlInput.value) link += `&url=${encodeURIComponent(igUrlInput.value)}`;
-                if (igCaptionInput.value) link += `&caption=${encodeURIComponent(igCaptionInput.value)}`;
-                generatedUrlInput.value = link;
+                const user = (igUserInput.value || '').trim();
+                const url = (igUrlInput.value || '').trim();
+                const caption = (igCaptionInput.value || '').trim();
+
+                const params = [];
+                if (user && user !== 'trending_reels') params.push(`user=${encodeURIComponent(user)}`);
+                if (url && url !== 'https://www.instagram.com') params.push(`url=${encodeURIComponent(url)}`);
+                if (caption && caption !== 'Must watch viral video! 🔥') params.push(`caption=${encodeURIComponent(caption)}`);
+
+                const route = params.length === 0 ? '/ig' : '/instagram';
+                generatedUrlInput.value = `${baseUrl}${route}${params.length > 0 ? '?' + params.join('&') : ''}`;
             } else if (template === 'weather') {
                 generatedUrlInput.value = `${baseUrl}/weather`;
             } else if (template === 'youtube') {
                 const videoId = extractYouTubeId(ytUrlInput.value);
-                let link = `${baseUrl}/youtube?v=${encodeURIComponent(videoId)}`;
-                if (ytTitleInput.value) link += `&title=${encodeURIComponent(ytTitleInput.value)}`;
-                if (ytChannelInput.value) link += `&channel=${encodeURIComponent(ytChannelInput.value)}`;
-                generatedUrlInput.value = link;
+                const title = (ytTitleInput.value || '').trim();
+                const channel = (ytChannelInput.value || '').trim();
+
+                const params = [`v=${encodeURIComponent(videoId)}`];
+                if (title) params.push(`title=${encodeURIComponent(title)}`);
+                if (channel) params.push(`channel=${encodeURIComponent(channel)}`);
+
+                generatedUrlInput.value = `${baseUrl}/youtube?${params.join('&')}`;
             } else if (template === 'link') {
-                let dest = linkUrlInput.value.trim() || 'https://wikipedia.org';
-                let link = `${baseUrl}/link?url=${encodeURIComponent(dest)}`;
-                if (linkTitleInput.value) link += `&title=${encodeURIComponent(linkTitleInput.value)}`;
-                generatedUrlInput.value = link;
+                const dest = (linkUrlInput.value || '').trim() || 'https://wikipedia.org';
+                const title = (linkTitleInput.value || '').trim();
+
+                const params = [`url=${encodeURIComponent(dest)}`];
+                if (title) params.push(`title=${encodeURIComponent(title)}`);
+
+                generatedUrlInput.value = `${baseUrl}/link?${params.join('&')}`;
             } else if (template === 'custom') {
-                let link = `${baseUrl}/custom?t=1`;
-                if (customTitleInput.value) link += `&title=${encodeURIComponent(customTitleInput.value)}`;
-                if (customDescInput.value) link += `&desc=${encodeURIComponent(customDescInput.value)}`;
-                if (customImgInput.value) link += `&image=${encodeURIComponent(customImgInput.value)}`;
-                generatedUrlInput.value = link;
+                const title = (customTitleInput.value || '').trim();
+                const desc = (customDescInput.value || '').trim();
+                const img = (customImgInput.value || '').trim();
+
+                const params = [];
+                if (title) params.push(`title=${encodeURIComponent(title)}`);
+                if (desc) params.push(`desc=${encodeURIComponent(desc)}`);
+                if (img) params.push(`image=${encodeURIComponent(img)}`);
+
+                generatedUrlInput.value = `${baseUrl}/custom${params.length > 0 ? '?' + params.join('&') : ''}`;
             }
         }
 
