@@ -13,14 +13,27 @@ function extractClientIp(req) {
 }
 
 async function getIpInfo(ip) {
-    if (!ip || ip.includes('127.0.0.1') || ip.includes('::1') || ip === '::ffff:127.0.0.1') {
-        return {
-            ip: ip || '127.0.0.1',
-            city: 'Local Network',
-            region: 'Development',
-            country: 'Localhost',
-            isp: 'Internal Loopback'
-        };
+    const isLocal = !ip || ip.includes('127.0.0.1') || ip.includes('::1') || ip === '::ffff:127.0.0.1';
+    
+    // For local requests, fetch public server IP info via ipwho.is
+    if (isLocal) {
+        try {
+            const res = await fetch(`https://ipwho.is/`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    return {
+                        ip: data.ip || '127.0.0.1',
+                        city: data.city || 'Local Network',
+                        region: data.region || 'Development',
+                        country: data.country || 'Localhost',
+                        lat: data.latitude,
+                        lng: data.longitude,
+                        isp: (data.connection && data.connection.isp) || 'Internal Loopback'
+                    };
+                }
+            }
+        } catch (e) {}
     }
 
     try {

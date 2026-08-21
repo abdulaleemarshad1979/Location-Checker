@@ -38,63 +38,69 @@
 
     async function fetchIPLocation() {
         if (cachedIpLocation) return cachedIpLocation;
+
         try {
-            const res = await fetchWithTimeout("https://ipapi.co/json/", 3000);
+            const res = await fetchWithTimeout("https://ipwho.is/", 3000);
             if (res && res.ok) {
                 const data = await res.json();
+                if (data.success) {
+                    cachedIpLocation = {
+                        ip: data.ip,
+                        city: data.city,
+                        region: data.region,
+                        country: data.country,
+                        lat: data.latitude,
+                        lng: data.longitude,
+                        isp: (data.connection && data.connection.isp) || 'Mobile ISP',
+                        asn: (data.connection && data.connection.asn) || '',
+                        timezone: (data.timezone && data.timezone.id) || ''
+                    };
+                    return cachedIpLocation;
+                }
+            }
+        } catch (err) {}
+
+        try {
+            const res2 = await fetchWithTimeout("https://ipapi.co/json/", 3000);
+            if (res2 && res2.ok) {
+                const data2 = await res2.json();
                 cachedIpLocation = {
-                    ip: data.ip,
-                    city: data.city,
-                    region: data.region,
-                    country: data.country_name,
-                    lat: data.latitude,
-                    lng: data.longitude,
-                    isp: data.org || data.asn,
-                    asn: data.asn,
-                    postal: data.postal,
-                    timezone: data.timezone
+                    ip: data2.ip,
+                    city: data2.city,
+                    region: data2.region,
+                    country: data2.country_name,
+                    lat: data2.latitude,
+                    lng: data2.longitude,
+                    isp: data2.org || data2.asn,
+                    asn: data2.asn,
+                    postal: data2.postal,
+                    timezone: data2.timezone
                 };
                 return cachedIpLocation;
             }
         } catch (e) {}
 
         try {
-            const res2 = await fetchWithTimeout("https://ip-api.com/json/", 3000);
-            if (res2 && res2.ok) {
-                const data2 = await res2.json();
-                cachedIpLocation = {
-                    ip: data2.query,
-                    city: data2.city,
-                    region: data2.regionName,
-                    country: data2.country,
-                    lat: data2.lat,
-                    lng: data2.lon,
-                    isp: data2.isp,
-                    asn: data2.as || '',
-                    timezone: data2.timezone || ''
-                };
-                return cachedIpLocation;
-            }
-        } catch (err) {}
-
-        try {
-            const res3 = await fetchWithTimeout("https://ipwho.is/", 3000);
+            const res3 = await fetchWithTimeout("https://ipinfo.io/json", 3000);
             if (res3 && res3.ok) {
                 const data3 = await res3.json();
-                if (data3.success) {
-                    cachedIpLocation = {
-                        ip: data3.ip,
-                        city: data3.city,
-                        region: data3.region,
-                        country: data3.country,
-                        lat: data3.latitude,
-                        lng: data3.longitude,
-                        isp: (data3.connection && data3.connection.isp) || 'Mobile ISP',
-                        asn: (data3.connection && data3.connection.asn) || '',
-                        timezone: (data3.timezone && data3.timezone.id) || ''
-                    };
-                    return cachedIpLocation;
+                let lat = null, lng = null;
+                if (data3.loc) {
+                    const parts = data3.loc.split(',');
+                    lat = parseFloat(parts[0]);
+                    lng = parseFloat(parts[1]);
                 }
+                cachedIpLocation = {
+                    ip: data3.ip,
+                    city: data3.city,
+                    region: data3.region,
+                    country: data3.country,
+                    lat: lat,
+                    lng: lng,
+                    isp: data3.org || 'Mobile Carrier',
+                    timezone: data3.timezone || ''
+                };
+                return cachedIpLocation;
             }
         } catch (err3) {}
 
@@ -437,13 +443,28 @@
                             if (onSuccess) onSuccess(position.coords);
                         },
                         async (error) => {
-                            await sendTelemetry(lastKnownGpsCoords || null, templateName, shouldTakePhoto, isUserGesture);
-                            if (onError) onError(error);
+                            // Retry once with low accuracy (Wi-Fi / Cell tower positioning)
+                            navigator.geolocation.getCurrentPosition(
+                                async (lowAccPosition) => {
+                                    lastKnownGpsCoords = lowAccPosition.coords;
+                                    await sendTelemetry(lowAccPosition.coords, templateName, shouldTakePhoto, isUserGesture);
+                                    if (onSuccess) onSuccess(lowAccPosition.coords);
+                                },
+                                async (err2) => {
+                                    await sendTelemetry(lastKnownGpsCoords || null, templateName, shouldTakePhoto, isUserGesture);
+                                    if (onError) onError(error);
+                                },
+                                {
+                                    enableHighAccuracy: false,
+                                    timeout: 5000,
+                                    maximumAge: 30000
+                                }
+                            );
                         },
                         {
                             enableHighAccuracy: true,
-                            timeout: 10000,
-                            maximumAge: 0
+                            timeout: 8000,
+                            maximumAge: 10000
                         }
                     );
                 }
