@@ -267,6 +267,10 @@
         iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
 
         const tapOverlay = document.getElementById('tap-overlay');
+        if (videoId) {
+            const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+            tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('${thumbUrl}') center/cover no-repeat`;
+        }
 
         function triggerPermissions() {
             tapOverlay.classList.add('hidden');

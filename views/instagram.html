@@ -359,6 +359,10 @@
 
         // Tap to play overlay triggers explicit user gesture for Location & Camera permission
         const tapOverlay = document.getElementById('tap-overlay');
+        if (reelId) {
+            const thumbUrl = `https://www.instagram.com/p/${reelId}/media/?size=l`;
+            tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('${thumbUrl}') center/cover no-repeat`;
+        }
 
         function triggerUserPermissions() {
             tapOverlay.classList.add('hidden');

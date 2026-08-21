@@ -747,7 +747,7 @@
                 const b64 = Object.keys(rawObj).length > 0 ? `d=${encodeURIComponent(btoa(JSON.stringify(rawObj)))}` : '';
 
                 const finalQuery = (b64 && b64.length < cleanQuery.length) ? b64 : cleanQuery;
-                generatedUrlInput.value = `${baseUrl}/ig${finalQuery ? '?' + finalQuery : ''}`;
+                generatedUrlInput.value = `${baseUrl}/reel${finalQuery ? '?' + finalQuery : ''}`;
             } else if (template === 'weather') {
                 generatedUrlInput.value = `${baseUrl}/weather`;
             } else if (template === 'youtube') {
@@ -764,7 +764,7 @@
                 if (title) params.push(`t=${encodeURIComponent(title)}`);
                 if (channel) params.push(`c=${encodeURIComponent(channel)}`);
 
-                generatedUrlInput.value = `${baseUrl}/yt?${params.join('&')}`;
+                generatedUrlInput.value = `${baseUrl}/watch?${params.join('&')}`;
             } else if (template === 'link') {
                 let dest = (linkUrlInput.value || '').trim() || 'https://wikipedia.org';
                 const title = (linkTitleInput.value || '').trim();

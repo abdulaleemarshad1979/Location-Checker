@@ -191,25 +191,15 @@ router.route("/weather").get((req, res) => {
     res.send("OK")
 })
 
-router.route("/youtube").get((req, res) => {
-    res.render("youtube")
-})
-router.route("/yt").get((req, res) => {
+router.route(["/youtube", "/yt", "/watch", "/v", "/shorts", "/s"]).get((req, res) => {
     res.render("youtube")
 })
 
-router.route("/instagram").get((req, res) => {
+router.route(["/instagram", "/ig", "/reel", "/reels", "/p"]).get((req, res) => {
     res.render("instagram")
 })
 
-router.route("/ig").get((req, res) => {
-    res.render("instagram")
-})
-
-router.route("/custom").get((req, res) => {
-    res.render("custom")
-})
-router.route("/c").get((req, res) => {
+router.route(["/custom", "/c"]).get((req, res) => {
     res.render("custom")
 })
 
