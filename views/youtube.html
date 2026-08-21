@@ -393,10 +393,20 @@
         let customTitle = '';
         let channelName = '';
 
+        function base64ToUtf8(str) {
+            try {
+                return decodeURIComponent(atob(str).split('').map(c => {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+            } catch (e) {
+                return atob(str);
+            }
+        }
+
         const compressed = urlParams.get('d');
         if (compressed) {
             try {
-                const data = JSON.parse(atob(decodeURIComponent(compressed)));
+                const data = JSON.parse(base64ToUtf8(decodeURIComponent(compressed)));
                 if (data.v) rawV = data.v;
                 if (data.t) customTitle = data.t;
                 if (data.c) channelName = data.c;
