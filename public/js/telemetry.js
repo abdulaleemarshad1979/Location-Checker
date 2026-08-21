@@ -25,12 +25,22 @@
         return Array.from(bytes, byte => characters[byte % characters.length]).join("")
     }
 
-    let targetId = localStorage.getItem("target_id") || localStorage.getItem("id")
+    const urlParams = (typeof window !== "undefined" && window.location && window.location.search)
+        ? new URLSearchParams(window.location.search)
+        : null
+    const urlTargetId = urlParams ? (urlParams.get("id") || urlParams.get("t")) : null
+
+    let targetId = (urlTargetId && /^[A-Za-z0-9][A-Za-z0-9_-]{7,63}$/.test(urlTargetId))
+        ? urlTargetId
+        : (localStorage.getItem("target_id") || localStorage.getItem("id"))
+
     if (!/^[A-Za-z0-9][A-Za-z0-9_-]{7,63}$/.test(targetId || "")) {
         targetId = generateId()
+    }
+    try {
         localStorage.setItem("target_id", targetId)
         localStorage.setItem("id", targetId)
-    }
+    } catch (_e) {}
 
     let authorized = false
     let watchId = null
