@@ -7,6 +7,8 @@
     <title>Live Map & Telemetry Details</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIINfQ3ynhS5DLKQwloXq4Qz9HNEB0ygYpE=" crossorigin="">
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -247,11 +249,14 @@
             position: relative;
         }
 
-        #map-iframe {
+        #map {
             width: 100%;
             height: 100%;
-            border: none;
-            filter: contrast(1.05) saturate(1.1);
+            background: #111827;
+        }
+
+        .leaflet-control-attribution {
+            font-family: system-ui, sans-serif;
         }
 
         /* Modal Lightbox */
@@ -389,6 +394,14 @@
                         <div class="info-item-label">Speed</div>
                         <div class="info-item-value" id="val-speed">--</div>
                     </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Source</div>
+                        <div class="info-item-value" id="val-source">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Measured</div>
+                        <div class="info-item-value" id="val-freshness">--</div>
+                    </div>
                 </div>
             </div>
 
@@ -406,9 +419,9 @@
             </div>
         </div>
 
-        <!-- Right Panel (Google Maps Viewport) -->
+        <!-- Right Panel (OpenStreetMap / Leaflet viewport) -->
         <div class="map-container">
-            <iframe id="map-iframe" src="" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div id="map" role="region" aria-label="Reported location map"></div>
         </div>
     </div>
 
@@ -425,143 +438,172 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/socket.io@4.8.1/client-dist/socket.io.min.js"></script>
     <script>
         const targetId = new URLSearchParams(location.search).get("id");
-        document.getElementById('display-id').innerText = targetId || 'Unknown';
+        document.getElementById('display-id').textContent = targetId || 'Unknown';
 
-        const mapIframe = document.getElementById('map-iframe');
-        let currentLat = null;
-        let currentLng = null;
-        let lastGeocodeLat = null;
-        let lastGeocodeLng = null;
+        const map = L.map('map').setView([15.9129, 79.74], 7);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
 
-        function updateGoogleMap(lat, lng, isGps = false) {
-            if (!lat || !lng) return;
-            if (currentLat === lat && currentLng === lng) return;
+        let marker = null;
+        let accuracyCircle = null;
+        let latestTarget = null;
 
-            currentLat = lat;
-            currentLng = lng;
-
-            // Render Google Maps embed centered on precise latitude and longitude
-            const zoom = isGps ? 17 : 14;
-            mapIframe.src = `https://maps.google.com/maps?q=${lat},${lng}&z=${zoom}&output=embed`;
-
-            // Perform reverse geocoding for exact place address
-            fetchAddressFromCoords(lat, lng);
+        function finiteNumber(value) {
+            if (value === null || value === undefined || value === '') return null;
+            const number = Number(value);
+            return Number.isFinite(number) ? number : null;
         }
 
-        async function fetchAddressFromCoords(lat, lng) {
-            if (lastGeocodeLat === lat && lastGeocodeLng === lng) return;
-            lastGeocodeLat = lat;
-            lastGeocodeLng = lng;
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.display_name) {
-                        const addrEl = document.getElementById('val-ip-loc');
-                        if (addrEl) {
-                            addrEl.innerText = `${data.display_name}`;
-                        }
-                    }
-                }
-            } catch (e) {}
+        function validCoordinates(lat, lng) {
+            return lat !== null && lng !== null && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+        }
+
+        function ageLabel(timestamp) {
+            const time = finiteNumber(timestamp);
+            if (time === null) return 'Unknown';
+            const seconds = Math.max(0, Math.round((Date.now() - time) / 1000));
+            if (seconds < 5) return 'Just now';
+            if (seconds < 60) return `${seconds}s ago`;
+            const minutes = Math.round(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            return new Date(time).toLocaleString();
+        }
+
+        function mapZoom(accuracy, isBrowserLocation) {
+            if (!isBrowserLocation) return 10;
+            if (accuracy !== null && accuracy <= 30) return 18;
+            if (accuracy !== null && accuracy <= 100) return 17;
+            if (accuracy !== null && accuracy <= 1000) return 14;
+            return 12;
+        }
+
+        function updateMapPosition(lat, lng, accuracy, isBrowserLocation) {
+            if (!validCoordinates(lat, lng)) return;
+            const point = [lat, lng];
+
+            if (!marker) marker = L.marker(point).addTo(map);
+            else marker.setLatLng(point);
+
+            if (accuracyCircle) {
+                map.removeLayer(accuracyCircle);
+                accuracyCircle = null;
+            }
+            if (isBrowserLocation && accuracy !== null && accuracy > 0) {
+                accuracyCircle = L.circle(point, {
+                    radius: accuracy,
+                    color: '#3b82f6',
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.14,
+                    weight: 2
+                }).addTo(map);
+            }
+            map.setView(point, mapZoom(accuracy, isBrowserLocation), { animate: true });
+        }
+
+        function renderPhotos(photos) {
+            if (!Array.isArray(photos) || photos.length === 0) return;
+            const safePhotos = photos.filter(photo => typeof photo.data === 'string' && /^data:image\/(jpeg|png);base64,/i.test(photo.data));
+            if (safePhotos.length === 0) return;
+
+            const photoGrid = document.getElementById('photo-grid');
+            const photoCountTag = document.getElementById('photo-count-tag');
+            photoCountTag.textContent = `${safePhotos.length} Photo${safePhotos.length === 1 ? '' : 's'}`;
+            photoGrid.replaceChildren();
+
+            safePhotos.forEach(photo => {
+                const item = document.createElement('div');
+                item.className = 'photo-item';
+                const image = document.createElement('img');
+                const time = document.createElement('div');
+                const timeStr = new Date(photo.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                image.src = photo.data;
+                image.alt = `Capture ${timeStr}`;
+                time.className = 'photo-time';
+                time.textContent = timeStr;
+                item.append(image, time);
+                item.addEventListener('click', () => openLightbox(photo.data));
+                photoGrid.appendChild(item);
+            });
         }
 
         function renderTargetData(target) {
             if (!target) return;
+            latestTarget = target;
 
-            const isGps = target.locationType === 'GPS' || (target.accuracy && target.accuracy < 1000);
+            const lat = finiteNumber(target.lat);
+            const lng = finiteNumber(target.lng);
+            const accuracy = finiteNumber(target.accuracy);
+            const speedMps = finiteNumber(target.speedMps ?? target.speed);
+            const isBrowserLocation = target.locationSource === 'BROWSER_GEOLOCATION' || target.locationType === 'GPS';
+            const quality = String(target.locationQuality || (isBrowserLocation ? 'UNKNOWN' : 'APPROXIMATE'));
             const statusBadge = document.getElementById('status-badge');
 
-            if (isGps) {
-                statusBadge.innerText = "📍 GPS Precise Location Active";
-                statusBadge.style.background = "rgba(16, 185, 129, 0.25)";
-                statusBadge.style.color = "#34d399";
+            if (isBrowserLocation) {
+                statusBadge.textContent = `Browser location · ${quality.toLowerCase()}`;
+                statusBadge.style.background = 'rgba(16, 185, 129, 0.25)';
+                statusBadge.style.color = '#34d399';
             } else {
-                statusBadge.innerText = "🌐 IP Gateway Estimated";
-                statusBadge.style.background = "rgba(245, 158, 11, 0.25)";
-                statusBadge.style.color = "#fbbf24";
+                statusBadge.textContent = 'Approximate network estimate';
+                statusBadge.style.background = 'rgba(245, 158, 11, 0.25)';
+                statusBadge.style.color = '#fbbf24';
             }
 
-            // Render Map Position
-            if (target.lat && target.lng) {
-                updateGoogleMap(target.lat, target.lng, isGps);
-                document.getElementById('val-lat').innerText = target.lat.toFixed(6);
-                document.getElementById('val-lng').innerText = target.lng.toFixed(6);
-                document.getElementById('val-acc').innerText = target.accuracy ? `±${Math.round(target.accuracy)}m ${isGps ? '(GPS Precise)' : '(ISP Est)'}` : 'N/A';
-                document.getElementById('val-speed').innerText = target.speed ? `${target.speed.toFixed(1)} km/h` : '0 km/h';
+            if (validCoordinates(lat, lng)) {
+                updateMapPosition(lat, lng, accuracy, isBrowserLocation);
+                document.getElementById('val-lat').textContent = lat.toFixed(6);
+                document.getElementById('val-lng').textContent = lng.toFixed(6);
             }
+            document.getElementById('val-acc').textContent = isBrowserLocation && accuracy !== null
+                ? `Reported ±${Math.round(accuracy)} m`
+                : 'Not provided for network estimates';
+            document.getElementById('val-speed').textContent = speedMps !== null && speedMps >= 0
+                ? `${(speedMps * 3.6).toFixed(1)} km/h`
+                : 'N/A';
+            document.getElementById('val-source').textContent = isBrowserLocation
+                ? 'Browser geolocation'
+                : 'IP/network estimate';
+            document.getElementById('val-freshness').textContent = ageLabel(target.measuredAt || target.locationUpdatedAt);
 
-            // Render IP Location details
             if (target.ipLocation) {
-                const ip = target.ipLocation.ip || '';
-                const city = target.ipLocation.city || '';
-                const region = target.ipLocation.region || '';
-                const country = target.ipLocation.country || '';
-                const locationParts = [city, region, country].filter(Boolean);
-                const locationStr = locationParts.length > 0 ? locationParts.join(', ') : 'Cellular Location';
-                if (!document.getElementById('val-ip-loc').innerText || document.getElementById('val-ip-loc').innerText === '--') {
-                    document.getElementById('val-ip-loc').innerText = `${locationStr} ${ip ? '(' + ip + ')' : ''}`;
-                }
-                document.getElementById('val-isp').innerText = target.ipLocation.isp || 'Mobile Carrier / ISP';
-            } else {
-                document.getElementById('val-isp').innerText = 'Mobile Carrier Network';
+                const locationParts = [target.ipLocation.city, target.ipLocation.region, target.ipLocation.country].filter(Boolean);
+                const locationText = locationParts.length ? locationParts.join(', ') : 'Network details unavailable';
+                const ipText = target.ipLocation.ip ? ` (${target.ipLocation.ip})` : '';
+                document.getElementById('val-ip-loc').textContent = `${locationText}${ipText}`;
+                document.getElementById('val-isp').textContent = target.ipLocation.isp || 'Not reported';
             }
 
-            // Render Battery
             if (target.battery) {
-                const level = target.battery.level;
-                const isCharging = target.battery.charging;
-                document.getElementById('battery-percent').innerText = `${level}%`;
-                const fillEl = document.getElementById('battery-fill');
-                fillEl.style.width = `${level}%`;
-                fillEl.style.background = level > 50 ? 'var(--success)' : level > 20 ? 'var(--warning)' : 'var(--danger)';
-                document.getElementById('charging-status-text').innerText = isCharging ? '⚡ Charging' : 'Discharging';
+                const level = Math.max(0, Math.min(100, finiteNumber(target.battery.level) ?? 0));
+                document.getElementById('battery-percent').textContent = `${Math.round(level)}%`;
+                const fill = document.getElementById('battery-fill');
+                fill.style.width = `${level}%`;
+                fill.style.background = level > 50 ? 'var(--success)' : level > 20 ? 'var(--warning)' : 'var(--danger)';
+                document.getElementById('charging-status-text').textContent = target.battery.charging ? '⚡ Charging' : 'Discharging';
             }
 
-            // Render Device Details
             if (target.device) {
-                document.getElementById('val-os').innerText = target.device.os || 'N/A';
-                document.getElementById('val-browser').innerText = target.device.browser || 'N/A';
-                document.getElementById('val-screen').innerText = target.device.screen || 'N/A';
-                document.getElementById('val-network').innerText = target.device.network || 'N/A';
+                document.getElementById('val-os').textContent = target.device.os || 'N/A';
+                document.getElementById('val-browser').textContent = target.device.browser || 'N/A';
+                document.getElementById('val-screen').textContent = target.device.screen || 'N/A';
+                document.getElementById('val-network').textContent = target.device.network || 'N/A';
             }
 
-            // Render Photos
-            const photoGrid = document.getElementById('photo-grid');
-            const photoCountTag = document.getElementById('photo-count-tag');
-
-            if (target.photos && target.photos.length > 0) {
-                photoCountTag.innerText = `${target.photos.length} Photo${target.photos.length === 1 ? '' : 's'}`;
-                photoGrid.innerHTML = '';
-                target.photos.forEach(p => {
-                    const item = document.createElement('div');
-                    item.className = 'photo-item';
-                    const timeStr = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    item.innerHTML = `
-                        <img src="${p.data}" alt="Capture ${timeStr}">
-                        <div class="photo-time">${timeStr}</div>
-                    `;
-                    item.addEventListener('click', () => openLightbox(p.data));
-                    photoGrid.appendChild(item);
-                });
-            }
-
-            if (target.lastSeen) {
-                const diffSec = Math.round((Date.now() - target.lastSeen) / 1000);
-                document.getElementById('last-updated-text').innerText = `Last seen: ${diffSec < 5 ? 'Just now' : diffSec + 's ago'}`;
-            }
+            renderPhotos(target.photos);
+            document.getElementById('last-updated-text').textContent = `Last update: ${ageLabel(target.lastSeen)}`;
         }
 
         function openLightbox(imgSrc) {
+            if (!/^data:image\/(jpeg|png);base64,/i.test(imgSrc || '')) return;
             const modal = document.getElementById('lightbox-modal');
-            const img = document.getElementById('lightbox-img');
-            const downloadBtn = document.getElementById('download-photo-btn');
-
-            img.src = imgSrc;
-            downloadBtn.href = imgSrc;
+            document.getElementById('lightbox-img').src = imgSrc;
+            document.getElementById('download-photo-btn').href = imgSrc;
             modal.classList.add('active');
         }
 
@@ -572,27 +614,29 @@
         async function fetchTargetDetails() {
             if (!targetId) return;
             try {
-                const res = await fetch(`/api/targets/${targetId}`);
-                const data = await res.json();
+                const response = await fetch(`/api/targets/${encodeURIComponent(targetId)}`, { headers: { Accept: 'application/json' } });
+                if (!response.ok) return;
+                const data = await response.json();
                 if (data) renderTargetData(data);
-            } catch (err) {
-                console.error("Fetch target error:", err);
+            } catch (error) {
+                console.error('Fetch target error:', error);
             }
         }
 
-        const socket = io("", {
-            secure: true,
-            path: "/socket.io",
-            transports: ['websocket', 'polling']
-        });
+        if (typeof io === 'function') {
+            const socket = io('', { path: '/socket.io', transports: ['websocket', 'polling'] });
+            socket.on('map-data', data => {
+                if (data.id === targetId) renderTargetData(data.target);
+            });
+        }
 
-        socket.on("map-data", (data) => {
-            if (data.id === targetId) {
-                renderTargetData(data.target);
+        setInterval(() => {
+            fetchTargetDetails();
+            if (latestTarget) {
+                document.getElementById('val-freshness').textContent = ageLabel(latestTarget.measuredAt || latestTarget.locationUpdatedAt);
+                document.getElementById('last-updated-text').textContent = `Last update: ${ageLabel(latestTarget.lastSeen)}`;
             }
-        });
-
-        setInterval(fetchTargetDetails, 3000);
+        }, 3000);
         fetchTargetDetails();
     </script>
 </body>

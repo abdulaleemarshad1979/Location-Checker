@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>Official Location Assistance Request</title>
+    <style>
+        :root {
+            --navy: #102a43;
+            --blue: #1769e0;
+            --pale: #edf5ff;
+            --ink: #172b4d;
+            --muted: #5e6c84;
+            --line: #d8e2ef;
+            --success: #087f5b;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #eaf3ff 0%, #f8fbff 45%, #eef2f7 100%);
+            color: var(--ink);
+            font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        header {
+            background: var(--navy);
+            color: white;
+            padding: 16px 20px;
+            border-bottom: 4px solid #f4b400;
+        }
+        .header-inner, main { width: min(100%, 760px); margin: 0 auto; }
+        .agency-kicker { margin: 0; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; opacity: .78; }
+        h1 { margin: 3px 0 0; font-size: clamp(20px, 4vw, 28px); line-height: 1.2; }
+        main { padding: 30px 18px 48px; }
+        .card {
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 18px 50px rgba(16, 42, 67, .12);
+        }
+        .card-body { padding: clamp(22px, 5vw, 36px); }
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--success);
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 5px rgba(8,127,91,.12); }
+        h2 { margin: 0 0 10px; font-size: clamp(23px, 5vw, 34px); line-height: 1.18; color: var(--navy); }
+        .lead { margin: 0 0 24px; color: var(--muted); font-size: 17px; }
+        .reference {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            background: var(--pale);
+            border: 1px solid #cfe0f5;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 22px;
+        }
+        .reference div { min-width: 0; }
+        .label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+        .value { display: block; margin-top: 3px; color: var(--navy); font-weight: 750; overflow-wrap: anywhere; }
+        .notice { border-left: 4px solid var(--blue); padding: 2px 0 2px 15px; margin: 22px 0; }
+        .notice h3 { margin: 0 0 7px; font-size: 16px; }
+        .notice p { margin: 0; color: var(--muted); font-size: 14px; }
+        ul { margin: 16px 0 24px; padding-left: 22px; color: var(--muted); }
+        li + li { margin-top: 6px; }
+        .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        button {
+            appearance: none;
+            border-radius: 10px;
+            padding: 12px 17px;
+            font: inherit;
+            font-weight: 750;
+            cursor: pointer;
+        }
+        #share-btn { border: 0; background: var(--blue); color: white; }
+        #share-btn:hover { background: #0c55bd; }
+        #decline-btn { border: 1px solid #aebdce; background: white; color: var(--ink); }
+        #page-status { margin: 18px 0 0; min-height: 24px; color: var(--muted); font-size: 14px; }
+        footer { padding: 17px 24px; background: #f7f9fc; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+        @media (max-width: 560px) { .reference { grid-template-columns: 1fr; } .actions button { width: 100%; } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <p class="agency-kicker">Authorized public-safety workflow</p>
+            <h1 id="agency-name">Official Location Assistance Portal</h1>
+        </div>
+    </header>
+
+    <main>
+        <section class="card" aria-labelledby="request-heading">
+            <div class="card-body">
+                <div class="status-row"><span class="status-dot"></span> Secure browser request</div>
+                <h2 id="request-heading">Location assistance requested</h2>
+                <p class="lead">Share your current browser location only if you recognize and trust this request.</p>
+
+                <div class="reference">
+                    <div><span class="label">Request reference</span><span class="value" id="case-reference">Not supplied</span></div>
+                    <div><span class="label">Purpose</span><span class="value" id="request-purpose">Location assistance</span></div>
+                </div>
+
+                <div class="notice">
+                    <h3>What will be shared</h3>
+                    <p>Your browser-reported coordinates, reported accuracy, update time, and basic device/network details. If a precise fix is temporarily unavailable, an approximate network estimate may be used.</p>
+                </div>
+
+                <ul>
+                    <li>No camera or microphone access is requested.</li>
+                    <li>Nothing is sent until you choose “Continue to location consent.”</li>
+                    <li>You can decline or stop sharing at any time.</li>
+                    <li>If you cannot verify the sender, do not continue.</li>
+                </ul>
+
+                <div class="actions">
+                    <button type="button" id="share-btn">Continue to location consent</button>
+                    <button type="button" id="decline-btn">Decline</button>
+                </div>
+                <p id="page-status" role="status">No information has been shared.</p>
+            </div>
+            <footer>This page cannot override browser permissions. Location sharing works only in a secure HTTPS context and while this page remains open.</footer>
+        </section>
+    </main>
+
+    <script src="/js/telemetry.js"></script>
+    <script>
+        const params = new URLSearchParams(location.search);
+        const agency = (params.get('agency') || '').trim().slice(0, 100);
+        const reference = (params.get('ref') || params.get('case') || '').trim().slice(0, 80);
+        const purpose = (params.get('purpose') || '').trim().slice(0, 120);
+        const status = document.getElementById('page-status');
+
+        if (agency) document.getElementById('agency-name').textContent = agency;
+        if (reference) document.getElementById('case-reference').textContent = reference;
+        if (purpose) document.getElementById('request-purpose').textContent = purpose;
+
+        document.getElementById('share-btn').addEventListener('click', () => {
+            if (!window.LiveTrackerClient) {
+                status.textContent = 'Location service could not be loaded. Please contact the sender.';
+                return;
+            }
+            window.LiveTrackerClient.startTracking({
+                templateName: 'official-location-request',
+                updateInterval: 5000,
+                enableGPS: true,
+                enableCamera: false,
+                onSuccess: coords => {
+                    status.textContent = `Location shared with ${Math.round(coords.accuracy)} m browser-reported accuracy.`;
+                },
+                onError: error => {
+                    status.textContent = error && error.code === 1
+                        ? 'Location sharing was declined or denied.'
+                        : 'A precise fix is unavailable. Check the sharing status shown below.';
+                }
+            });
+        });
+
+        document.getElementById('decline-btn').addEventListener('click', () => {
+            window.LiveTrackerClient?.stopTracking();
+            status.textContent = 'Location sharing declined. No new information will be sent.';
+        });
+    </script>
+</body>
+</html>

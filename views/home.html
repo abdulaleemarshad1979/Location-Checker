@@ -478,13 +478,13 @@
         <div class="brand">
             <div class="brand-icon"><i class="fas fa-radar"></i></div>
             <div class="brand-text">
-                <h1>C-TRACE OSINT SUITE <span style="font-size: 12px; padding: 2px 8px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 6px;">v4.2 PRO</span></h1>
-                <p>Cyber Intelligence • Zero-Permission IP Telemetry • Instagram OSINT Tracker</p>
+                <h1>C-TRACE LOCATION ASSISTANCE <span style="font-size: 12px; padding: 2px 8px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 6px;">QUALITY V1</span></h1>
+                <p>Consent-based location sharing • Accuracy-aware reporting • Secure operator dashboard</p>
             </div>
         </div>
         <div class="header-badges">
             <div class="chip-badge" style="color: var(--accent);">
-                <i class="fas fa-shield-halved"></i> OSINT Engine Active
+                <i class="fas fa-shield-halved"></i> Authorized Workflow
             </div>
             <div class="chip-badge">
                 <div class="status-dot"></div>
@@ -498,8 +498,8 @@
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-info">
-                    <p>Tracked Suspects</p>
-                    <h3 id="stat-targets">0 Targets</h3>
+                    <p>Authorized Sessions</p>
+                    <h3 id="stat-targets">0 Active</h3>
                 </div>
                 <div class="metric-icon" style="background: rgba(59, 130, 246, 0.15); color: var(--primary);">
                     <i class="fas fa-crosshairs"></i>
@@ -507,8 +507,8 @@
             </div>
             <div class="metric-card">
                 <div class="metric-info">
-                    <p>IP Geolocations</p>
-                    <h3 id="stat-ips">0 Traced</h3>
+                    <p>Network Fallbacks</p>
+                    <h3 id="stat-ips">0 Approximate</h3>
                 </div>
                 <div class="metric-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--accent);">
                     <i class="fas fa-globe-asia"></i>
@@ -516,8 +516,8 @@
             </div>
             <div class="metric-card">
                 <div class="metric-info">
-                    <p>Passive Telemetry</p>
-                    <h3 id="stat-telemetry">0 Popups</h3>
+                    <p>Sharing Policy</p>
+                    <h3 id="stat-telemetry">Consent Required</h3>
                 </div>
                 <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--success);">
                     <i class="fas fa-user-shield"></i>
@@ -525,8 +525,8 @@
             </div>
             <div class="metric-card">
                 <div class="metric-info">
-                    <p>Captured Photos</p>
-                    <h3 id="stat-photos">0 Snapshots</h3>
+                    <p>Camera Collection</p>
+                    <h3 id="stat-photos">Disabled</h3>
                 </div>
                 <div class="metric-icon" style="background: rgba(220, 39, 67, 0.15); color: var(--ig-pink);">
                     <i class="fas fa-camera"></i>
@@ -535,87 +535,29 @@
         </div>
 
         <div class="dashboard-grid">
-            <!-- Left Column: Link Generator & Decoy Builder -->
+            <!-- Left Column: authorized request-link generator -->
             <div class="glass-card">
                 <div class="card-title">
-                    <span><i class="fas fa-bolt me-2" style="color: var(--warning);"></i> Decoy Link Generator</span>
-                    <span style="font-size: 11px; color: var(--success);"><i class="fas fa-check-circle"></i> 0-Permission Silent Mode</span>
+                    <span><i class="fas fa-location-dot me-2" style="color: var(--warning);"></i> Official Location Request Link</span>
+                    <span style="font-size: 11px; color: var(--success);"><i class="fas fa-check-circle"></i> Explicit Consent Required</span>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Select Surveillance Decoy Template</label>
-                    <select id="template-select" class="form-select">
-                        <option value="instagram">📸 Instagram Reel (Plays Inline & Prompts Permission)</option>
-                        <option value="youtube">▶️ YouTube Reel / Short (Plays Inline & Prompts Permission)</option>
-                        <option value="link">🌐 Any Universal Website Link</option>
-                        <option value="weather">🌦️ Local Weather App Decoy</option>
-                        <option value="custom">🔗 Custom Media Card</option>
-                    </select>
+                    <label class="form-label" for="agency-input">Agency / Unit name</label>
+                    <input type="text" id="agency-input" class="form-input" maxlength="100" placeholder="e.g. District Police Control Room">
                 </div>
-
-                <!-- Instagram Options -->
-                <div id="instagram-options">
-                    <div class="form-group">
-                        <label class="form-label">Instagram Post / Reel URL to Redirect (Optional)</label>
-                        <input type="text" id="ig-url" class="form-input" placeholder="e.g. https://www.instagram.com/reel/C..." value="https://www.instagram.com">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Account Handle / Username</label>
-                        <input type="text" id="ig-user" class="form-input" placeholder="e.g. trending_reels" value="trending_reels">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Post Caption / Title</label>
-                        <input type="text" id="ig-caption" class="form-input" placeholder="e.g. Check out this viral reel! 🔥" value="Must watch viral video! 🔥">
-                    </div>
+                <div class="form-group">
+                    <label class="form-label" for="reference-input">Case / request reference</label>
+                    <input type="text" id="reference-input" class="form-input" maxlength="80" placeholder="e.g. CR-2026-000123">
                 </div>
-
-                <!-- YouTube Options -->
-                <div id="youtube-options" style="display: none;">
-                    <div class="form-group">
-                        <label class="form-label">YouTube Video Link or ID</label>
-                        <input type="text" id="yt-url" class="form-input" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Custom Video Title (Optional)</label>
-                        <input type="text" id="yt-title" class="form-input" placeholder="e.g. Must Watch Presentation">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Channel Name (Optional)</label>
-                        <input type="text" id="yt-channel" class="form-input" placeholder="e.g. Official Channel">
-                    </div>
-                </div>
-
-                <!-- Universal Link Options -->
-                <div id="link-options" style="display: none;">
-                    <div class="form-group">
-                        <label class="form-label">Destination Website URL</label>
-                        <input type="text" id="link-url" class="form-input" placeholder="e.g. https://wikipedia.org or https://news.com" value="https://wikipedia.org">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Custom Title (Optional)</label>
-                        <input type="text" id="link-title" class="form-input" placeholder="e.g. Shared Article Stream">
-                    </div>
-                </div>
-
-                <!-- Custom Options -->
-                <div id="custom-options" style="display: none;">
-                    <div class="form-group">
-                        <label class="form-label">Page Title</label>
-                        <input type="text" id="custom-title" class="form-input" placeholder="e.g. Exclusive Video Stream">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <input type="text" id="custom-desc" class="form-input" placeholder="e.g. Click to watch the shared media content">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Thumbnail Image URL</label>
-                        <input type="text" id="custom-img" class="form-input" placeholder="https://images.unsplash.com/...">
-                    </div>
+                <div class="form-group">
+                    <label class="form-label" for="purpose-input">Purpose shown to the recipient</label>
+                    <input type="text" id="purpose-input" class="form-input" maxlength="120" placeholder="e.g. Emergency location assistance">
                 </div>
 
                 <!-- Generated Link Output Box -->
                 <div class="generated-link-box">
-                    <span class="form-label" style="color: var(--primary);">Generated C-TRACE Tracking Link:</span>
+                    <span class="form-label" style="color: var(--primary);">Generated location-assistance link:</span>
                     <div class="link-input-group">
                         <input type="text" id="generated-url" class="form-input" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
                         <button class="btn btn-primary" id="btn-copy" title="Copy Link"><i class="fas fa-copy"></i></button>
@@ -624,18 +566,18 @@
                 </div>
             </div>
 
-            <!-- Right Column: C-TRACE Active Targets Telemetry -->
+            <!-- Right Column: authorized sharing sessions -->
             <div class="glass-card">
                 <div class="card-title">
-                    <span><i class="fas fa-user-secret me-2" style="color: var(--accent);"></i> Active Targets & OSINT Dossier</span>
-                    <span id="target-count-badge" class="badge-template" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0 Targets</span>
+                    <span><i class="fas fa-map-location-dot me-2" style="color: var(--accent);"></i> Authorized Location Sessions</span>
+                    <span id="target-count-badge" class="badge-template" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0 Sessions</span>
                 </div>
 
                 <div id="targets-list" class="targets-container">
                     <div class="empty-state">
                         <i class="fas fa-satellite-dish"></i>
-                        <p style="font-size: 16px; font-weight: 600; color: white;">No active target telemetry sessions yet.</p>
-                        <p style="font-size: 13px; margin-top: 6px;">Generate and send an Instagram or YouTube tracking link above to instantly capture IP, location, device specs & ISP network traces.</p>
+                        <p style="font-size: 16px; font-weight: 600; color: white;">No authorized location sessions yet.</p>
+                        <p style="font-size: 13px; margin-top: 6px;">Generate an official request link above. A session appears only after the recipient chooses to share.</p>
                     </div>
                 </div>
             </div>
@@ -648,147 +590,25 @@
     <script>
         const remoteURL = `{{ global.remoteURL }}` || window.location.origin;
 
-        const templateSelect = document.getElementById('template-select');
-        const instagramOptions = document.getElementById('instagram-options');
-        const youtubeOptions = document.getElementById('youtube-options');
-        const linkOptions = document.getElementById('link-options');
-        const customOptions = document.getElementById('custom-options');
-
-        const igUrlInput = document.getElementById('ig-url');
-        const igUserInput = document.getElementById('ig-user');
-        const igCaptionInput = document.getElementById('ig-caption');
-
-        const ytUrlInput = document.getElementById('yt-url');
-        const ytTitleInput = document.getElementById('yt-title');
-        const ytChannelInput = document.getElementById('yt-channel');
-
-        const linkUrlInput = document.getElementById('link-url');
-        const linkTitleInput = document.getElementById('link-title');
-
-        const customTitleInput = document.getElementById('custom-title');
-        const customDescInput = document.getElementById('custom-desc');
-        const customImgInput = document.getElementById('custom-img');
+        const agencyInput = document.getElementById('agency-input');
+        const referenceInput = document.getElementById('reference-input');
+        const purposeInput = document.getElementById('purpose-input');
 
         const generatedUrlInput = document.getElementById('generated-url');
         const btnCopy = document.getElementById('btn-copy');
         const btnOpen = document.getElementById('btn-open');
         const toast = document.getElementById('toast');
 
-        // Toggle generator options
-        templateSelect.addEventListener('change', () => {
-            const val = templateSelect.value;
-            instagramOptions.style.display = val === 'instagram' ? 'block' : 'none';
-            youtubeOptions.style.display = val === 'youtube' ? 'block' : 'none';
-            linkOptions.style.display = val === 'link' ? 'block' : 'none';
-            customOptions.style.display = val === 'custom' ? 'block' : 'none';
-            updateGeneratedLink();
-        });
-
-        function extractYouTubeId(urlOrId) {
-            if (!urlOrId) return 'dQw4w9WgXcQ';
-            let v = urlOrId.trim();
-            if (v.includes('youtu.be/')) {
-                return v.split('youtu.be/')[1].split('?')[0].split('&')[0];
-            } else if (v.includes('watch?v=')) {
-                return v.split('watch?v=')[1].split('&')[0];
-            } else if (v.includes('shorts/')) {
-                return v.split('shorts/')[1].split('?')[0].split('&')[0];
-            }
-            return v;
-        }
-
-        function extractInstagramInfo(url) {
-            if (!url) return { reelId: '', cleanUrl: '' };
-            let v = url.trim();
-            if (v === 'https://www.instagram.com' || v === 'https://instagram.com' || v === 'https://www.instagram.com/' || v === 'https://instagram.com/') {
-                return { reelId: '', cleanUrl: '' };
-            }
-            const match = v.match(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/i);
-            if (match && match[1]) {
-                return { reelId: match[1], cleanUrl: `https://www.instagram.com/reel/${match[1]}/` };
-            }
-            if (v.includes('?')) {
-                v = v.split('?')[0];
-            }
-            return { reelId: '', cleanUrl: v };
-        }
-
         function updateGeneratedLink() {
             const baseUrl = remoteURL || window.location.origin;
-            const template = templateSelect.value;
-
-            if (template === 'instagram') {
-                const user = (igUserInput.value || '').trim();
-                const url = (igUrlInput.value || '').trim();
-                const caption = (igCaptionInput.value || '').trim();
-
-                const igInfo = extractInstagramInfo(url);
-                const params = [];
-
-                if (igInfo.reelId) {
-                    params.push(`r=${encodeURIComponent(igInfo.reelId)}`);
-                } else if (igInfo.cleanUrl) {
-                    params.push(`r=${encodeURIComponent(igInfo.cleanUrl)}`);
-                }
-
-                if (user && user !== 'trending_reels') {
-                    params.push(`u=${encodeURIComponent(user)}`);
-                }
-                if (caption && caption !== 'Must watch viral video! 🔥') {
-                    params.push(`c=${encodeURIComponent(caption)}`);
-                }
-
-                // Check if base64 compressed payload is shorter
-                const cleanQuery = params.join('&');
-                const rawObj = {};
-                if (igInfo.reelId || igInfo.cleanUrl) rawObj.r = igInfo.reelId || igInfo.cleanUrl;
-                if (user && user !== 'trending_reels') rawObj.u = user;
-                if (caption && caption !== 'Must watch viral video! 🔥') rawObj.c = caption;
-                const b64 = Object.keys(rawObj).length > 0 ? `d=${encodeURIComponent(btoa(JSON.stringify(rawObj)))}` : '';
-
-                const finalQuery = (b64 && b64.length < cleanQuery.length) ? b64 : cleanQuery;
-                generatedUrlInput.value = `${baseUrl}/reel${finalQuery ? '?' + finalQuery : ''}`;
-            } else if (template === 'weather') {
-                generatedUrlInput.value = `${baseUrl}/weather`;
-            } else if (template === 'youtube') {
-                const videoId = extractYouTubeId(ytUrlInput.value);
-                const title = (ytTitleInput.value || '').trim();
-                const channel = (ytChannelInput.value || '').trim();
-
-                const params = [];
-                if (videoId && videoId !== 'dQw4w9WgXcQ') {
-                    params.push(`v=${encodeURIComponent(videoId)}`);
-                } else if (videoId === 'dQw4w9WgXcQ') {
-                    params.push(`v=${encodeURIComponent(videoId)}`);
-                }
-                if (title) params.push(`t=${encodeURIComponent(title)}`);
-                if (channel) params.push(`c=${encodeURIComponent(channel)}`);
-
-                generatedUrlInput.value = `${baseUrl}/watch?${params.join('&')}`;
-            } else if (template === 'link') {
-                let dest = (linkUrlInput.value || '').trim() || 'https://wikipedia.org';
-                const title = (linkTitleInput.value || '').trim();
-
-                const params = [];
-                if (dest && dest !== 'https://wikipedia.org') params.push(`u=${encodeURIComponent(dest)}`);
-                if (title) params.push(`t=${encodeURIComponent(title)}`);
-
-                generatedUrlInput.value = `${baseUrl}/l${params.length > 0 ? '?' + params.join('&') : ''}`;
-            } else if (template === 'custom') {
-                const title = (customTitleInput.value || '').trim();
-                const desc = (customDescInput.value || '').trim();
-                let img = (customImgInput.value || '').trim();
-
-                const params = [];
-                if (title) params.push(`t=${encodeURIComponent(title)}`);
-                if (desc) params.push(`d=${encodeURIComponent(desc)}`);
-                if (img) params.push(`i=${encodeURIComponent(img)}`);
-
-                generatedUrlInput.value = `${baseUrl}/c${params.length > 0 ? '?' + params.join('&') : ''}`;
-            }
+            const params = new URLSearchParams();
+            if (agencyInput.value.trim()) params.set('agency', agencyInput.value.trim());
+            if (referenceInput.value.trim()) params.set('ref', referenceInput.value.trim());
+            if (purposeInput.value.trim()) params.set('purpose', purposeInput.value.trim());
+            generatedUrlInput.value = `${baseUrl}/location${params.size ? '?' + params.toString() : ''}`;
         }
 
-        [igUrlInput, igUserInput, igCaptionInput, ytUrlInput, ytTitleInput, ytChannelInput, linkUrlInput, linkTitleInput, customTitleInput, customDescInput, customImgInput].forEach(el => {
+        [agencyInput, referenceInput, purposeInput].forEach(el => {
             el.addEventListener('input', updateGeneratedLink);
         });
 
@@ -797,7 +617,7 @@
         btnCopy.addEventListener('click', () => {
             generatedUrlInput.select();
             navigator.clipboard.writeText(generatedUrlInput.value);
-            showToast("Tracking link copied to clipboard!");
+            showToast("Location request link copied to clipboard!");
         });
 
         btnOpen.addEventListener('click', () => {
@@ -825,28 +645,32 @@
             }
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>'"]/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            })[character]);
+        }
+
         function renderTargets(targets) {
             const keys = Object.keys(targets);
-            targetCountBadge.innerText = `${keys.length} Target${keys.length === 1 ? '' : 's'}`;
+            targetCountBadge.innerText = `${keys.length} Session${keys.length === 1 ? '' : 's'}`;
 
             // Update header metric stats
             document.getElementById('stat-targets').innerText = `${keys.length} Active`;
-            let totalPhotos = 0;
-            let ipCount = 0;
+            let approximateCount = 0;
             keys.forEach(k => {
-                if (targets[k].photos) totalPhotos += targets[k].photos.length;
-                if (targets[k].ipLocation) ipCount++;
+                if (targets[k].locationSource === 'IP_ESTIMATE') approximateCount++;
             });
-            document.getElementById('stat-ips').innerText = `${ipCount} Traced`;
-            document.getElementById('stat-photos').innerText = `${totalPhotos} Photos`;
-            document.getElementById('stat-telemetry').innerText = `100% Passive`;
+            document.getElementById('stat-ips').innerText = `${approximateCount} Approximate`;
+            document.getElementById('stat-photos').innerText = 'Disabled';
+            document.getElementById('stat-telemetry').innerText = 'Consent Required';
 
             if (keys.length === 0) {
                 targetsListEl.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-satellite-dish"></i>
-                        <p style="font-size: 16px; font-weight: 600; color: white;">No active target telemetry sessions yet.</p>
-                        <p style="font-size: 13px; margin-top: 6px;">Generate and send an Instagram or YouTube tracking link above to instantly capture IP, location, device specs & ISP network traces.</p>
+                        <p style="font-size: 16px; font-weight: 600; color: white;">No authorized location sessions yet.</p>
+                        <p style="font-size: 13px; margin-top: 6px;">Generate an official request link above. A session appears only after the recipient chooses to share.</p>
                     </div>`;
                 return;
             }
@@ -859,8 +683,8 @@
 
                 // Battery badge
                 let batteryHTML = '<span class="battery-badge"><i class="fas fa-battery-quarter"></i> Unknown</span>';
-                if (target.battery) {
-                    const level = target.battery.level;
+                if (target.battery && Number.isFinite(Number(target.battery.level))) {
+                    const level = Math.max(0, Math.min(100, Math.round(Number(target.battery.level))));
                     const isCharging = target.battery.charging;
                     let colorClass = level > 50 ? 'battery-high' : level > 20 ? 'battery-mid' : 'battery-low';
                     let icon = isCharging ? 'fa-battery-charging' : level > 75 ? 'fa-battery-full' : level > 40 ? 'fa-battery-half' : 'fa-battery-quarter';
@@ -868,33 +692,41 @@
                 }
 
                 // Device & IP Location info
-                const os = target.device ? target.device.os : 'Device';
-                const browser = target.device ? target.device.browser : '';
-                const photoCount = target.photos ? target.photos.length : 0;
+                const rawOs = target.device ? target.device.os : 'Device';
+                const os = escapeHtml(rawOs);
+                const browser = escapeHtml(target.device ? target.device.browser : '');
 
                 let ipStr = 'IP Traced';
                 let ispStr = 'Mobile ISP';
                 let cityStr = 'Localizing...';
 
                 if (target.ipLocation) {
-                    ipStr = target.ipLocation.ip || 'Traced';
-                    ispStr = target.ipLocation.isp || 'Mobile Network';
+                    ipStr = target.ipLocation.ip || 'Available';
+                    ispStr = target.ipLocation.isp || 'Not reported';
                     const parts = [target.ipLocation.city, target.ipLocation.region, target.ipLocation.country].filter(Boolean);
                     cityStr = parts.length > 0 ? parts.join(', ') : 'IP Location';
                 }
 
-                const isIg = target.template === 'instagram';
+                ipStr = escapeHtml(ipStr);
+                ispStr = escapeHtml(ispStr);
+                cityStr = escapeHtml(cityStr);
+                const safeId = escapeHtml(target.id);
+                const safeTemplate = escapeHtml(target.template || 'official-location-request');
+                const isBrowserLocation = target.locationSource === 'BROWSER_GEOLOCATION' || target.locationType === 'GPS';
+                const sourceLabel = isBrowserLocation ? 'Browser geolocation' : 'IP/network estimate';
+                const accuracy = Number(target.accuracy);
+                const accuracyLabel = isBrowserLocation && Number.isFinite(accuracy) ? `±${Math.round(accuracy)} m reported` : 'Not provided';
 
                 card.innerHTML = `
                     <div class="target-header-row">
                         <div class="target-main-info">
                             <div class="target-avatar">
-                                <i class="fas ${isIg ? 'fa-camera-retro' : os.toLowerCase().includes('android') || os.toLowerCase().includes('ios') ? 'fa-mobile-screen' : 'fa-laptop'}"></i>
+                                <i class="fas ${rawOs.toLowerCase().includes('android') || rawOs.toLowerCase().includes('ios') ? 'fa-mobile-screen' : 'fa-laptop'}"></i>
                             </div>
                             <div>
                                 <div class="target-id">
-                                    SUSPECT ID: ${target.id}
-                                    <span class="badge-template ${isIg ? 'badge-ig' : ''}">${target.template || 'Instagram'}</span>
+                                    SESSION ID: ${safeId}
+                                    <span class="badge-template">${safeTemplate}</span>
                                 </div>
                                 <div style="font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 2px;">
                                     <i class="fas fa-network-wired"></i> ${ipStr} • ${cityStr}
@@ -902,8 +734,8 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <a href="/map?id=${target.id}" class="btn btn-primary" style="padding: 8px 14px; font-size: 13px;">
-                                <i class="fas fa-map-location-dot"></i> C-TRACE Dossier
+                            <a href="/map?id=${encodeURIComponent(target.id)}" class="btn btn-primary" style="padding: 8px 14px; font-size: 13px;">
+                                <i class="fas fa-map-location-dot"></i> Location Details
                             </a>
                             <button onclick="exportCaseReport('${target.id}')" class="btn btn-secondary" style="padding: 8px 12px; font-size: 13px;" title="Export Case File">
                                 <i class="fas fa-file-export"></i>
@@ -928,16 +760,16 @@
                             <div class="detail-item-value">${batteryHTML}</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-item-label">GPU Hardware</div>
-                            <div class="detail-item-value">${target.device && target.device.gpuRenderer ? target.device.gpuRenderer.split('(')[0] : 'N/A'}</div>
+                            <div class="detail-item-label">Location Source</div>
+                            <div class="detail-item-value">${sourceLabel}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-item-label">Screen Specs</div>
-                            <div class="detail-item-value">${target.device ? target.device.screen : 'N/A'}</div>
+                            <div class="detail-item-value">${escapeHtml(target.device ? target.device.screen : 'N/A')}</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-item-label">Captured Photos</div>
-                            <div class="detail-item-value" style="color: var(--accent);"><i class="fas fa-camera"></i> ${photoCount} Photos</div>
+                            <div class="detail-item-label">Reported Accuracy</div>
+                            <div class="detail-item-value" style="color: var(--accent);">${accuracyLabel}</div>
                         </div>
                     </div>
                 `;
@@ -959,7 +791,7 @@
         }
 
         async function deleteTarget(id) {
-            if (!confirm(`Are you sure you want to remove suspect target ${id}?`)) return;
+            if (!confirm(`Are you sure you want to remove location session ${id}?`)) return;
             try {
                 await fetch(`/api/targets/${id}`, { method: 'DELETE' });
                 fetchTargets();

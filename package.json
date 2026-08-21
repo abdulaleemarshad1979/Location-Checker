@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node .",
-    "dev": "nodemon -e .html,.js ."
+    "dev": "nodemon -e .html,.js .",
+    "check": "node --check server.js && node --check router.js && node --check location-quality.js && node --check public/js/telemetry.js",
+    "test": "node --test"
   },
   "author": "",
   "license": "ISC",
@@ -15,5 +17,8 @@
     "express": "^4.21.1",
     "socket.io": "^4.8.1",
     "tarkine": "^0.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
   }
 }
