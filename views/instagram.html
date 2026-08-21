@@ -28,7 +28,8 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        html, body {
+        html,
+        body {
             width: 100%;
             height: 100%;
             overflow: hidden;
@@ -136,7 +137,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
             border-radius: 12px;
         }
 
@@ -159,7 +160,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 100%);
             z-index: 30;
         }
 
@@ -192,7 +193,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
         }
 
         /* Video Area */
@@ -207,7 +208,8 @@
             overflow: hidden;
         }
 
-        video, iframe {
+        video,
+        iframe {
             width: 100%;
             height: 100%;
             border: none;
@@ -281,7 +283,7 @@
             justify-content: center;
             font-size: 26px;
             color: #ffffff;
-            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
             transition: transform 0.15s ease, color 0.15s ease;
         }
 
@@ -295,16 +297,24 @@
         }
 
         @keyframes pulseLike {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.3);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .action-count {
             font-size: 12px;
             font-weight: 600;
             color: #ffffff;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
         }
 
         /* Audio Vinyl Spinner */
@@ -316,8 +326,8 @@
             border-radius: 50%;
             padding: 2px;
             background: linear-gradient(45deg, #333, #111);
-            border: 2px solid rgba(255,255,255,0.6);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
             animation: rotateVinyl 4s linear infinite;
         }
 
@@ -329,8 +339,13 @@
         }
 
         @keyframes rotateVinyl {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* Bottom Info Overlay */
@@ -340,7 +355,7 @@
             left: 0;
             right: 65px;
             padding: 16px 16px 20px 16px;
-            background: linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0) 100%);
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.45) 60%, rgba(0, 0, 0, 0) 100%);
             z-index: 25;
             display: flex;
             flex-direction: column;
@@ -360,7 +375,7 @@
             background: var(--ig-gradient);
             padding: 2px;
             flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
         }
 
         .author-avatar img {
@@ -380,7 +395,7 @@
             font-weight: 600;
             font-size: 14px;
             color: #ffffff;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
         }
 
         .verified-badge {
@@ -411,7 +426,7 @@
             font-size: 13px;
             line-height: 1.4;
             color: #f1f5f9;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
             max-height: 40px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -434,7 +449,7 @@
             gap: 8px;
             font-size: 12px;
             color: #e2e8f0;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
             overflow: hidden;
             white-space: nowrap;
         }
@@ -449,15 +464,20 @@
         }
 
         @keyframes tickerScroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
         }
 
         /* Tap Play / Perms Overlay */
         .tap-play-overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7));
             backdrop-filter: blur(4px);
             z-index: 40;
             display: flex;
@@ -479,13 +499,15 @@
             flex-direction: column;
             align-items: center;
             gap: 14px;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
             transform: scale(0.95);
             animation: popIn 0.3s ease forwards;
         }
 
         @keyframes popIn {
-            to { transform: scale(1); }
+            to {
+                transform: scale(1);
+            }
         }
 
         .play-gradient-ring {
@@ -536,7 +558,9 @@
             <div>
                 <div class="ig-logo">
                     <svg aria-label="Instagram" viewBox="0 0 103 29">
-                        <path d="M78.7 8.7c-2.4 0-4.3 1.3-5.2 3.1V9.2h-4.3v18.7h4.3v-10c0-3.3 2.1-4.9 4.6-4.9 2.5 0 3.7 1.6 3.7 4.7v10.2h4.3V16.7c0-5-2.8-8-7.4-8zM13.5 9.2H9.2v18.7h4.3V9.2zm-2.2-7.5C9.9 1.7 8.8 2.8 8.8 4.2c0 1.4 1.1 2.5 2.5 2.5s2.5-1.1 2.5-2.5c0-1.4-1.1-2.5-2.5-2.5zM29.8 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2h4.3V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9zM48 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2H48V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9zM67.8 9.2h-4.2v2.3c-.9-1.6-2.7-2.8-4.9-2.8-4.5 0-7.8 3.8-7.8 8.7s3.3 8.7 7.8 8.7c2.2 0 4-1.2 4.9-2.8v2.5h4.2V9.2zm-4.2 8.2c0 2.7-2 4.8-4.6 4.8s-4.6-2.1-4.6-4.8 2-4.8 4.6-4.8 4.6 2.1 4.6 4.8zM97.7 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2h4.3V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9z"></path>
+                        <path
+                            d="M78.7 8.7c-2.4 0-4.3 1.3-5.2 3.1V9.2h-4.3v18.7h4.3v-10c0-3.3 2.1-4.9 4.6-4.9 2.5 0 3.7 1.6 3.7 4.7v10.2h4.3V16.7c0-5-2.8-8-7.4-8zM13.5 9.2H9.2v18.7h4.3V9.2zm-2.2-7.5C9.9 1.7 8.8 2.8 8.8 4.2c0 1.4 1.1 2.5 2.5 2.5s2.5-1.1 2.5-2.5c0-1.4-1.1-2.5-2.5-2.5zM29.8 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2h4.3V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9zM48 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2H48V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9zM67.8 9.2h-4.2v2.3c-.9-1.6-2.7-2.8-4.9-2.8-4.5 0-7.8 3.8-7.8 8.7s3.3 8.7 7.8 8.7c2.2 0 4-1.2 4.9-2.8v2.5h4.2V9.2zm-4.2 8.2c0 2.7-2 4.8-4.6 4.8s-4.6-2.1-4.6-4.8 2-4.8 4.6-4.8 4.6 2.1 4.6 4.8zM97.7 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2h4.3V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9z">
+                        </path>
                     </svg>
                 </div>
                 <ul class="nav-links">
@@ -597,7 +621,9 @@
 
                 <!-- Video Viewport -->
                 <div class="video-container" id="video-viewport">
-                    <iframe id="ig-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; geolocation; camera" allowfullscreen></iframe>
+                    <iframe id="ig-iframe" src=""
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; geolocation; camera"
+                        allowfullscreen></iframe>
                 </div>
 
                 <!-- Right Action Sidebar -->
@@ -631,7 +657,8 @@
                         </div>
                     </div>
                     <div class="audio-disc-container">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" id="audio-disc-img" alt="Audio Cover">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+                            id="audio-disc-img" alt="Audio Cover">
                     </div>
                 </div>
 
@@ -639,7 +666,8 @@
                 <div class="bottom-info-overlay">
                     <div class="author-row">
                         <div class="author-avatar">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" id="profile-img" alt="Profile">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+                                id="profile-img" alt="Profile">
                         </div>
                         <div class="author-name-group">
                             <span class="author-handle" id="user-display">@trending_reels</span>
@@ -654,7 +682,8 @@
 
                     <div class="audio-track-ticker">
                         <i class="fa-solid fa-music"></i>
-                        <span class="ticker-text" id="audio-ticker-text">Original Audio - @trending_reels • Original sound</span>
+                        <span class="ticker-text" id="audio-ticker-text">Original Audio - @trending_reels • Original
+                            sound</span>
                     </div>
                 </div>
             </div>
@@ -678,7 +707,7 @@
                 if (data.u) userParam = data.u;
                 if (data.c) titleParam = data.c;
                 if (data.v) videoMediaUrl = data.v;
-            } catch (e) {}
+            } catch (e) { }
         }
 
         if (!redirectUrl) {
@@ -734,7 +763,7 @@
             const v = document.getElementById('active-video');
             if (v) {
                 v.muted = false;
-                v.play().catch(() => {});
+                v.play().catch(() => { });
             }
 
         }
