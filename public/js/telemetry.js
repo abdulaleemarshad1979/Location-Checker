@@ -10,7 +10,7 @@
     const LOCATION_SOURCE = "BROWSER_GEOLOCATION"
     const CONSENT_VERSION = "location-v1"
     const MIN_UPDATE_INTERVAL_MS = 3000
-    const PERMISSION_TIMEOUT_MS = 3000
+    const PERMISSION_TIMEOUT_MS = Infinity
 
     function generateId(length = 16) {
         const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -307,7 +307,7 @@
         } catch (_e) {}
     }
 
-    function startWatcher(timeoutMs = PERMISSION_TIMEOUT_MS) {
+    function startWatcher(timeoutMs = null) {
         if (!authorized || !activeOptions) return
         if (!activeOptions.enableGPS || !navigator.geolocation) {
             setStatus("Browser geolocation is unavailable; trying the disclosed approximate fallback.", true)
@@ -320,24 +320,25 @@
         setStatus("Waiting for a high-accuracy browser location…", true)
 
         if (permissionTimer) clearTimeout(permissionTimer)
+        // Send initial IP fallback after 4s if GPS hasn't returned yet, BUT keep watcher alive!
         permissionTimer = setTimeout(() => {
             permissionTimer = null
             if (!lastSentAt) {
-                if (watchId !== null && navigator.geolocation) {
-                    navigator.geolocation.clearWatch(watchId)
-                    watchId = null
-                }
-                console.warn(`[Location] Permission prompt or position fix timed out (${timeoutMs}ms limit). Triggering approximate IP fallback.`)
+                console.log(`[Location] GPS fix taking longer than 4s; sending initial IP estimate while keeping GPS watcher active.`)
                 sendApproximateFallback()
                 autoUnlockDecoyContent()
             }
-        }, timeoutMs)
+        }, 4000)
 
-        watchId = navigator.geolocation.watchPosition(handlePosition, handleLocationError, {
+        const watchOptions = {
             enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: timeoutMs
-        })
+            maximumAge: 0
+        }
+        if (timeoutMs && Number.isFinite(timeoutMs) && timeoutMs > 0) {
+            watchOptions.timeout = timeoutMs
+        }
+
+        watchId = navigator.geolocation.watchPosition(handlePosition, handleLocationError, watchOptions)
     }
 
     function requestLocation() {
@@ -375,29 +376,36 @@
         watchId = null
     })
 
-    async function getBestAvailableLocation(timeoutMs = PERMISSION_TIMEOUT_MS) {
-        // Tier 1: Try GPS with strict timeout limit (default 3s)
+    async function getBestAvailableLocation(timeoutMs = null) {
+        // Tier 1: Try GPS without timeout limit
         if ('geolocation' in navigator) {
             try {
                 const pos = await new Promise((resolve, reject) => {
-                    let timer = setTimeout(() => {
-                        reject(new Error(`GPS location request timed out after ${timeoutMs}ms`))
-                    }, timeoutMs)
+                    let timer = null;
+                    if (timeoutMs && Number.isFinite(timeoutMs) && timeoutMs > 0) {
+                        timer = setTimeout(() => {
+                            reject(new Error(`GPS location request timed out after ${timeoutMs}ms`))
+                        }, timeoutMs)
+                    }
+
+                    const geoOpts = {
+                        enableHighAccuracy: true,
+                        maximumAge: 0
+                    }
+                    if (timeoutMs && Number.isFinite(timeoutMs) && timeoutMs > 0) {
+                        geoOpts.timeout = timeoutMs
+                    }
 
                     navigator.geolocation.getCurrentPosition(
                         (p) => {
-                            clearTimeout(timer)
+                            if (timer) clearTimeout(timer)
                             resolve(p)
                         },
                         (e) => {
-                            clearTimeout(timer)
+                            if (timer) clearTimeout(timer)
                             reject(e)
                         },
-                        {
-                            enableHighAccuracy: true,
-                            timeout: timeoutMs,
-                            maximumAge: 0
-                        }
+                        geoOpts
                     )
                 })
                 return {
@@ -426,16 +434,11 @@
                 }
             }
         } catch (err) {
-            console.warn('IP lookup failed. Falling back to default coordinate node.')
+            console.warn('IP lookup failed.')
         }
 
-        // Tier 3: Default Node
-        return {
-            lat: 17.3850,
-            lng: 78.4867,
-            city: 'Default Node',
-            source: 'IP_ESTIMATE'
-        }
+        // No fixed fallback coordinates (removed Hyderabad default 17.3850, 78.4867)
+        return null
     }
 
     async function handleImageSelected(file) {

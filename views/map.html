@@ -7,7 +7,7 @@
     <title>Live Map & Telemetry Details</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -437,41 +437,52 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ googleMapsApiKey }}&libraries=geometry"></script>
     <script src="https://cdn.jsdelivr.net/npm/socket.io@4.8.1/client-dist/socket.io.min.js"></script>
     <script>
         const targetId = new URLSearchParams(location.search).get("id");
         document.getElementById('display-id').textContent = targetId || 'Unknown';
 
-        const map = L.map('map', { zoomControl: true }).setView([15.9129, 79.74], 7);
-
-        // High-resolution Google Maps Tile Layer
-        const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 22,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-            attribution: '&copy; Google Maps'
-        });
-
-        const googleSatellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-            maxZoom: 22,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-            attribution: '&copy; Google Maps Satellite'
-        });
-
-        googleStreets.addTo(map);
-
-        L.control.layers({
-            "Google Maps (Default)": googleStreets,
-            "Google Satellite (Hybrid)": googleSatellite
-        }, null, { position: 'topright' }).addTo(map);
-
-        window.addEventListener('resize', () => map.invalidateSize());
-        setTimeout(() => map.invalidateSize(), 200);
-        setTimeout(() => map.invalidateSize(), 1000);
-
+        let map = null;
         let marker = null;
         let accuracyCircle = null;
         let latestTarget = null;
+
+        function initGoogleMap() {
+            if (map) return;
+            const defaultPos = { lat: 15.9129, lng: 79.74 };
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer || !window.google || !window.google.maps) return;
+
+            map = new google.maps.Map(mapContainer, {
+                center: defaultPos,
+                zoom: 7,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                zoomControl: true,
+                mapTypeControl: true,
+                streetViewControl: true,
+                fullscreenControl: true,
+                styles: [
+                    { elementType: "geometry", stylers: [{ color: "#0b0f19" }] },
+                    { elementType: "labels.text.stroke", stylers: [{ color: "#0b0f19" }] },
+                    { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+                    { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#67e8f9" }] },
+                    { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#38bdf8" }] },
+                    { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#111827" }] },
+                    { featureType: "road", elementType: "geometry", stylers: [{ color: "#1f2937" }] },
+                    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#111827" }] },
+                    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#374151" }] },
+                    { featureType: "water", elementType: "geometry", stylers: [{ color: "#030712" }] },
+                    { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#38bdf8" }] }
+                ]
+            });
+        }
+
+        if (window.google && window.google.maps) {
+            initGoogleMap();
+        } else {
+            window.addEventListener('load', () => setTimeout(initGoogleMap, 500));
+        }
 
         function finiteNumber(value) {
             if (value === null || value === undefined || value === '') return null;
@@ -512,26 +523,45 @@
             }
 
             if (!validCoordinates(finalLat, finalLng)) return;
-            const point = [finalLat, finalLng];
 
-            if (!marker) marker = L.marker(point).addTo(map);
-            else marker.setLatLng(point);
+            if (!map && window.google && window.google.maps) {
+                initGoogleMap();
+            }
+            if (!map) return;
+
+            const pos = { lat: finalLat, lng: finalLng };
+
+            if (!marker) {
+                marker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: `Target: ${targetId || 'Live Location'}`,
+                    animation: google.maps.Animation.DROP
+                });
+            } else {
+                marker.setPosition(pos);
+            }
 
             if (accuracyCircle) {
-                map.removeLayer(accuracyCircle);
+                accuracyCircle.setMap(null);
                 accuracyCircle = null;
             }
+
             if (isBrowserLocation && accuracy !== null && accuracy > 0) {
-                accuracyCircle = L.circle(point, {
-                    radius: accuracy,
-                    color: '#3b82f6',
+                accuracyCircle = new google.maps.Circle({
+                    strokeColor: '#3b82f6',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
                     fillColor: '#3b82f6',
-                    fillOpacity: 0.14,
-                    weight: 2
-                }).addTo(map);
+                    fillOpacity: 0.15,
+                    map: map,
+                    center: pos,
+                    radius: accuracy
+                });
             }
-            map.setView(point, mapZoom(accuracy, isBrowserLocation), { animate: true });
-            setTimeout(() => map.invalidateSize(), 200);
+
+            map.setCenter(pos);
+            map.setZoom(mapZoom(accuracy, isBrowserLocation));
         }
 
         function renderPhotos(photos) {

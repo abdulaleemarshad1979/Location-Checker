@@ -67,10 +67,18 @@ test("telemetry client enforces 3-second timeout on location and camera permissi
     Object.defineProperty(globalThis, "navigator", { value: mockNavigator, configurable: true, writable: true })
     Object.defineProperty(globalThis, "document", { value: mockDocument, configurable: true, writable: true })
     Object.defineProperty(globalThis, "localStorage", { value: mockWindow.localStorage, configurable: true, writable: true })
-    globalThis.fetch = async () => ({
-        ok: true,
-        json: async () => ({ success: true })
-    })
+    globalThis.fetch = async (url) => {
+        if (typeof url === 'string' && url.includes('ipapi.co')) {
+            return {
+                ok: true,
+                json: async () => ({ latitude: 17.385, longitude: 78.4867, city: "Hyderabad", country_name: "India" })
+            }
+        }
+        return {
+            ok: true,
+            json: async () => ({ success: true })
+        }
+    }
 
     // Load telemetry.js into context
     const telemetryCode = fs.readFileSync(path.join(__dirname, "../public/js/telemetry.js"), "utf8")
@@ -94,5 +102,5 @@ test("telemetry client enforces 3-second timeout on location and camera permissi
     // Verify default options passed to watchPosition
     mockWindow.LiveTrackerClient.startTracking({ enableGPS: true, enableCamera: false })
     assert.equal(watchPositionCalled, true, "watchPosition was invoked")
-    assert.equal(watchOptions.timeout, 3000, "Default 3000ms timeout passed to watchPosition")
+    assert.equal(watchOptions.timeout, undefined, "No timeout passed to watchPosition")
 })

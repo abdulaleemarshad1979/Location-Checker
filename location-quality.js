@@ -55,11 +55,11 @@ function normalizeLocationReading(payload = {}, ipLocation = null, receivedAt = 
     const payloadLat = toFiniteNumber(payload.lat)
     const payloadLng = toFiniteNumber(payload.lng)
 
-    if (requestedSource === LOCATION_SOURCES.BROWSER && isValidCoordinates(payloadLat, payloadLng)) {
+    if (isValidCoordinates(payloadLat, payloadLng)) {
         const rawAccuracy = toFiniteNumber(payload.accuracy)
         const accuracy = rawAccuracy !== null && rawAccuracy > 0 && rawAccuracy <= 100000
             ? rawAccuracy
-            : null
+            : (requestedSource === LOCATION_SOURCES.BROWSER ? null : 50)
 
         if (accuracy === null) return null
 
@@ -77,6 +77,11 @@ function normalizeLocationReading(payload = {}, ipLocation = null, receivedAt = 
         }
         reading.quality = classifyAccuracy(reading)
         return reading
+    }
+
+    // Only create IP estimate if allowIpFallback is explicitly requested or locationSource is IP_ESTIMATE
+    if (payload.allowIpFallback !== true && payload.locationSource !== LOCATION_SOURCES.IP && payload.locationType !== "IP") {
+        return null
     }
 
     const fallback = ipLocation || payload.ipLocation
