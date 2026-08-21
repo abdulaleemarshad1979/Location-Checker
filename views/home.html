@@ -625,7 +625,7 @@
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                         <span class="form-label" style="color: var(--primary); margin: 0;">Generated C-TRACE Tracking Link:</span>
                         <label style="font-size: 11px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                            <input type="checkbox" id="include-domain-checkbox" style="accent-color: var(--primary);"> Include Website Domain Name
+                            <input type="checkbox" id="include-domain-checkbox" checked style="accent-color: var(--primary);"> Include Website Domain Name
                         </label>
                     </div>
                     <div class="link-input-group">
@@ -716,14 +716,12 @@
         }
 
         function updateGeneratedLink() {
-            const includeDomain = includeDomainCheckbox ? includeDomainCheckbox.checked : false;
-            let baseUrl = "";
-            if (includeDomain) {
-                baseUrl = window.location.origin;
-                if (remoteURL && remoteURL.startsWith('http') && !remoteURL.includes('localhost') && !remoteURL.includes('127.0.0.1')) {
-                    baseUrl = remoteURL;
-                }
+            const includeDomain = includeDomainCheckbox ? includeDomainCheckbox.checked : true;
+            let baseUrl = window.location.origin;
+            if (remoteURL && remoteURL.startsWith('http') && !remoteURL.includes('localhost') && !remoteURL.includes('127.0.0.1')) {
+                baseUrl = remoteURL;
             }
+            if (!includeDomain) baseUrl = "";
 
             const t = templateSelect.value;
             let path = '/';
