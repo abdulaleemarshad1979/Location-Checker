@@ -431,47 +431,127 @@
         const targetId = new URLSearchParams(location.search).get("id");
         document.getElementById('display-id').innerText = targetId || 'Unknown';
 
-        const defaultCoords = [20.5937, 78.9629];
-        const map = L.map('map').setView(defaultCoords, 5);
+        const defaultCoords = [17.4207, 78.35089]; // Initial fallback coords
+        const map = L.map('map', {
+            center: defaultCoords,
+            zoom: 14,
+            zoomControl: true
+        });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // High-Detail Base Layers
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxNativeZoom: 19,
+            maxZoom: 21,
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+
+        const streetHdLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+            attribution: '&copy; OpenStreetMap contributors'
+        });
+
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            attribution: '&copy; CartoDB'
+        });
+
+        // Add default dark layer
+        darkLayer.addTo(map);
+
+        // Layer Control Widget for Maximum Map Detail Selection
+        const baseMaps = {
+            "🛰️ Satellite HD (Max Detail)": satelliteLayer,
+            "🗺️ Street HD Map": streetHdLayer,
+            "🌙 Cyber Dark Vector": darkLayer
+        };
+        L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+        L.control.scale({ imperial: false, metric: true, position: 'bottomleft' }).addTo(map);
 
         let marker = null;
         let accuracyCircle = null;
+        let initialZoomDone = false;
+        let lastGeocodeLat = null;
+        let lastGeocodeLng = null;
 
-        function updateMapPosition(lat, lng, accuracy) {
+        async function fetchAddressFromCoords(lat, lng) {
+            if (lastGeocodeLat === lat && lastGeocodeLng === lng) return;
+            lastGeocodeLat = lat;
+            lastGeocodeLng = lng;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.display_name) {
+                        const addrEl = document.getElementById('val-ip-loc');
+                        if (addrEl) {
+                            addrEl.innerText = `${data.display_name}`;
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function updateMapPosition(lat, lng, accuracy, isGps = false) {
             if (!lat || !lng) return;
             const latLng = [lat, lng];
 
             if (!marker) {
-                marker = L.marker(latLng).addTo(map);
-                map.setView(latLng, 14);
+                const customIcon = L.divIcon({
+                    className: 'custom-map-pin',
+                    html: `<div style="background: ${isGps ? '#10b981' : '#f59e0b'}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 15px ${isGps ? 'rgba(16,185,129,0.8)' : 'rgba(245,158,11,0.8)'};"></div>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
+                });
+                marker = L.marker(latLng, { icon: customIcon }).addTo(map);
+                const targetZoom = isGps ? 17 : 14;
+                map.setView(latLng, targetZoom);
+                initialZoomDone = true;
             } else {
                 marker.setLatLng(latLng);
+                if (!initialZoomDone || isGps) {
+                    const targetZoom = isGps ? 17 : 14;
+                    map.setView(latLng, targetZoom);
+                    initialZoomDone = true;
+                }
             }
 
             if (accuracy) {
+                const color = isGps ? '#10b981' : '#f59e0b';
                 if (!accuracyCircle) {
-                    accuracyCircle = L.circle(latLng, { radius: accuracy, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15 }).addTo(map);
+                    accuracyCircle = L.circle(latLng, { radius: accuracy, color: color, fillColor: color, fillOpacity: 0.15 }).addTo(map);
                 } else {
                     accuracyCircle.setLatLng(latLng);
                     accuracyCircle.setRadius(accuracy);
+                    accuracyCircle.setStyle({ color: color, fillColor: color });
                 }
             }
+
+            // Perform reverse geocoding for exact place name
+            fetchAddressFromCoords(lat, lng);
         }
 
         function renderTargetData(target) {
             if (!target) return;
 
-            // Render Map
+            const isGps = target.locationType === 'GPS' || (target.accuracy && target.accuracy < 1000);
+            const statusBadge = document.getElementById('status-badge');
+
+            if (isGps) {
+                statusBadge.innerText = "📍 GPS Precise Location Active";
+                statusBadge.style.background = "rgba(16, 185, 129, 0.25)";
+                statusBadge.style.color = "#34d399";
+            } else {
+                statusBadge.innerText = "🌐 IP Gateway Estimated";
+                statusBadge.style.background = "rgba(245, 158, 11, 0.25)";
+                statusBadge.style.color = "#fbbf24";
+            }
+
+            // Render Map Position
             if (target.lat && target.lng) {
-                updateMapPosition(target.lat, target.lng, target.accuracy);
-                document.getElementById('val-lat').innerText = target.lat.toFixed(5);
-                document.getElementById('val-lng').innerText = target.lng.toFixed(5);
-                document.getElementById('val-acc').innerText = target.accuracy ? `±${Math.round(target.accuracy)}m` : 'N/A';
+                updateMapPosition(target.lat, target.lng, target.accuracy, isGps);
+                document.getElementById('val-lat').innerText = target.lat.toFixed(6);
+                document.getElementById('val-lng').innerText = target.lng.toFixed(6);
+                document.getElementById('val-acc').innerText = target.accuracy ? `±${Math.round(target.accuracy)}m ${isGps ? '(GPS Precise)' : '(ISP Est)'}` : 'N/A';
                 document.getElementById('val-speed').innerText = target.speed ? `${target.speed.toFixed(1)} km/h` : '0 km/h';
             }
 
@@ -483,10 +563,11 @@
                 const country = target.ipLocation.country || '';
                 const locationParts = [city, region, country].filter(Boolean);
                 const locationStr = locationParts.length > 0 ? locationParts.join(', ') : 'Cellular Location';
-                document.getElementById('val-ip-loc').innerText = `${locationStr} ${ip ? '(' + ip + ')' : ''}`;
+                if (!document.getElementById('val-ip-loc').innerText || document.getElementById('val-ip-loc').innerText === '--') {
+                    document.getElementById('val-ip-loc').innerText = `${locationStr} ${ip ? '(' + ip + ')' : ''}`;
+                }
                 document.getElementById('val-isp').innerText = target.ipLocation.isp || 'Mobile Carrier / ISP';
             } else {
-                document.getElementById('val-ip-loc').innerText = 'Detected via GPS';
                 document.getElementById('val-isp').innerText = 'Mobile Carrier Network';
             }
 
@@ -498,7 +579,6 @@
                 const fillEl = document.getElementById('battery-fill');
                 fillEl.style.width = `${level}%`;
                 fillEl.style.background = level > 50 ? 'var(--success)' : level > 20 ? 'var(--warning)' : 'var(--danger)';
-
                 document.getElementById('charging-status-text').innerText = isCharging ? '⚡ Charging' : 'Discharging';
             }
 

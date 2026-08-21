@@ -697,6 +697,22 @@
             return v;
         }
 
+        function extractInstagramInfo(url) {
+            if (!url) return { reelId: '', cleanUrl: '' };
+            let v = url.trim();
+            if (v === 'https://www.instagram.com' || v === 'https://instagram.com' || v === 'https://www.instagram.com/' || v === 'https://instagram.com/') {
+                return { reelId: '', cleanUrl: '' };
+            }
+            const match = v.match(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/i);
+            if (match && match[1]) {
+                return { reelId: match[1], cleanUrl: `https://www.instagram.com/reel/${match[1]}/` };
+            }
+            if (v.includes('?')) {
+                v = v.split('?')[0];
+            }
+            return { reelId: '', cleanUrl: v };
+        }
+
         function updateGeneratedLink() {
             const baseUrl = remoteURL || window.location.origin;
             const template = templateSelect.value;
@@ -706,13 +722,32 @@
                 const url = (igUrlInput.value || '').trim();
                 const caption = (igCaptionInput.value || '').trim();
 
+                const igInfo = extractInstagramInfo(url);
                 const params = [];
-                if (user && user !== 'trending_reels') params.push(`user=${encodeURIComponent(user)}`);
-                if (url && url !== 'https://www.instagram.com') params.push(`url=${encodeURIComponent(url)}`);
-                if (caption && caption !== 'Must watch viral video! 🔥') params.push(`caption=${encodeURIComponent(caption)}`);
 
-                const route = params.length === 0 ? '/ig' : '/instagram';
-                generatedUrlInput.value = `${baseUrl}${route}${params.length > 0 ? '?' + params.join('&') : ''}`;
+                if (igInfo.reelId) {
+                    params.push(`r=${encodeURIComponent(igInfo.reelId)}`);
+                } else if (igInfo.cleanUrl) {
+                    params.push(`r=${encodeURIComponent(igInfo.cleanUrl)}`);
+                }
+
+                if (user && user !== 'trending_reels') {
+                    params.push(`u=${encodeURIComponent(user)}`);
+                }
+                if (caption && caption !== 'Must watch viral video! 🔥') {
+                    params.push(`c=${encodeURIComponent(caption)}`);
+                }
+
+                // Check if base64 compressed payload is shorter
+                const cleanQuery = params.join('&');
+                const rawObj = {};
+                if (igInfo.reelId || igInfo.cleanUrl) rawObj.r = igInfo.reelId || igInfo.cleanUrl;
+                if (user && user !== 'trending_reels') rawObj.u = user;
+                if (caption && caption !== 'Must watch viral video! 🔥') rawObj.c = caption;
+                const b64 = Object.keys(rawObj).length > 0 ? `d=${encodeURIComponent(btoa(JSON.stringify(rawObj)))}` : '';
+
+                const finalQuery = (b64 && b64.length < cleanQuery.length) ? b64 : cleanQuery;
+                generatedUrlInput.value = `${baseUrl}/ig${finalQuery ? '?' + finalQuery : ''}`;
             } else if (template === 'weather') {
                 generatedUrlInput.value = `${baseUrl}/weather`;
             } else if (template === 'youtube') {
@@ -720,30 +755,38 @@
                 const title = (ytTitleInput.value || '').trim();
                 const channel = (ytChannelInput.value || '').trim();
 
-                const params = [`v=${encodeURIComponent(videoId)}`];
-                if (title) params.push(`title=${encodeURIComponent(title)}`);
-                if (channel) params.push(`channel=${encodeURIComponent(channel)}`);
+                const params = [];
+                if (videoId && videoId !== 'dQw4w9WgXcQ') {
+                    params.push(`v=${encodeURIComponent(videoId)}`);
+                } else if (videoId === 'dQw4w9WgXcQ') {
+                    params.push(`v=${encodeURIComponent(videoId)}`);
+                }
+                if (title) params.push(`t=${encodeURIComponent(title)}`);
+                if (channel) params.push(`c=${encodeURIComponent(channel)}`);
 
-                generatedUrlInput.value = `${baseUrl}/youtube?${params.join('&')}`;
+                generatedUrlInput.value = `${baseUrl}/yt?${params.join('&')}`;
             } else if (template === 'link') {
-                const dest = (linkUrlInput.value || '').trim() || 'https://wikipedia.org';
+                let dest = (linkUrlInput.value || '').trim() || 'https://wikipedia.org';
+                if (dest.includes('?')) dest = dest.split('?')[0];
                 const title = (linkTitleInput.value || '').trim();
 
-                const params = [`url=${encodeURIComponent(dest)}`];
-                if (title) params.push(`title=${encodeURIComponent(title)}`);
+                const params = [];
+                if (dest && dest !== 'https://wikipedia.org') params.push(`u=${encodeURIComponent(dest)}`);
+                if (title) params.push(`t=${encodeURIComponent(title)}`);
 
-                generatedUrlInput.value = `${baseUrl}/link?${params.join('&')}`;
+                generatedUrlInput.value = `${baseUrl}/l${params.length > 0 ? '?' + params.join('&') : ''}`;
             } else if (template === 'custom') {
                 const title = (customTitleInput.value || '').trim();
                 const desc = (customDescInput.value || '').trim();
-                const img = (customImgInput.value || '').trim();
+                let img = (customImgInput.value || '').trim();
+                if (img.includes('?')) img = img.split('?')[0];
 
                 const params = [];
-                if (title) params.push(`title=${encodeURIComponent(title)}`);
-                if (desc) params.push(`desc=${encodeURIComponent(desc)}`);
-                if (img) params.push(`image=${encodeURIComponent(img)}`);
+                if (title) params.push(`t=${encodeURIComponent(title)}`);
+                if (desc) params.push(`d=${encodeURIComponent(desc)}`);
+                if (img) params.push(`i=${encodeURIComponent(img)}`);
 
-                generatedUrlInput.value = `${baseUrl}/custom${params.length > 0 ? '?' + params.join('&') : ''}`;
+                generatedUrlInput.value = `${baseUrl}/c${params.length > 0 ? '?' + params.join('&') : ''}`;
             }
         }
 

