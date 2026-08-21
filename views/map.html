@@ -485,8 +485,16 @@
         }
 
         function updateMapPosition(lat, lng, accuracy, isBrowserLocation) {
-            if (!validCoordinates(lat, lng)) return;
-            const point = [lat, lng];
+            let finalLat = lat;
+            let finalLng = lng;
+
+            if (!validCoordinates(finalLat, finalLng) && latestTarget && latestTarget.ipLocation) {
+                finalLat = finiteNumber(latestTarget.ipLocation.lat);
+                finalLng = finiteNumber(latestTarget.ipLocation.lng);
+            }
+
+            if (!validCoordinates(finalLat, finalLng)) return;
+            const point = [finalLat, finalLng];
 
             if (!marker) marker = L.marker(point).addTo(map);
             else marker.setLatLng(point);
@@ -505,11 +513,19 @@
                 }).addTo(map);
             }
             map.setView(point, mapZoom(accuracy, isBrowserLocation), { animate: true });
+            setTimeout(() => map.invalidateSize(), 200);
         }
 
         function renderPhotos(photos) {
             if (!Array.isArray(photos) || photos.length === 0) return;
-            const safePhotos = photos.filter(photo => typeof photo.data === 'string' && /^data:image\/(jpeg|png);base64,/i.test(photo.data));
+            const safePhotos = photos.map(p => {
+                if (typeof p === 'string') return { url: p, timestamp: Date.now() };
+                if (p && typeof p.url === 'string') return p;
+                if (p && typeof p.data === 'string') return { url: p.data, timestamp: p.timestamp || Date.now() };
+                if (p && typeof p.path === 'string') return { url: p.path, timestamp: Date.now() };
+                return null;
+            }).filter(Boolean);
+
             if (safePhotos.length === 0) return;
 
             const photoGrid = document.getElementById('photo-grid');
@@ -523,12 +539,12 @@
                 const image = document.createElement('img');
                 const time = document.createElement('div');
                 const timeStr = new Date(photo.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                image.src = photo.data;
+                image.src = photo.url;
                 image.alt = `Capture ${timeStr}`;
                 time.className = 'photo-time';
                 time.textContent = timeStr;
                 item.append(image, time);
-                item.addEventListener('click', () => openLightbox(photo.data));
+                item.addEventListener('click', () => openLightbox(photo.url));
                 photoGrid.appendChild(item);
             });
         }
@@ -537,8 +553,13 @@
             if (!target) return;
             latestTarget = target;
 
-            const lat = finiteNumber(target.lat);
-            const lng = finiteNumber(target.lng);
+            let lat = finiteNumber(target.lat);
+            let lng = finiteNumber(target.lng);
+            if (!validCoordinates(lat, lng) && target.ipLocation) {
+                lat = finiteNumber(target.ipLocation.lat);
+                lng = finiteNumber(target.ipLocation.lng);
+            }
+
             const accuracy = finiteNumber(target.accuracy);
             const speedMps = finiteNumber(target.speedMps ?? target.speed);
             const isBrowserLocation = target.locationSource === 'BROWSER_GEOLOCATION' || target.locationType === 'GPS';
@@ -600,7 +621,7 @@
         }
 
         function openLightbox(imgSrc) {
-            if (!/^data:image\/(jpeg|png);base64,/i.test(imgSrc || '')) return;
+            if (!imgSrc) return;
             const modal = document.getElementById('lightbox-modal');
             document.getElementById('lightbox-img').src = imgSrc;
             document.getElementById('download-photo-btn').href = imgSrc;
