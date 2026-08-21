@@ -8,11 +8,33 @@ const http = require('http')
 
 const app = express()
 const server = http.createServer(app)
-const io = new socketIO.Server(server)
+const io = new socketIO.Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+})
 const PORT = process.env.PORT || config.port
 global.remoteURL = ""
 
 global.IO = io
+
+// Socket.IO Authentication Middleware
+function parseCookieToken(cookieHeader) {
+    if (!cookieHeader) return null;
+    const match = cookieHeader.match(/(?:^|;\s*)token=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+io.use((socket, next) => {
+    const cookieToken = parseCookieToken(socket.request.headers.cookie);
+    const queryToken = socket.handshake.auth?.token || socket.handshake.query?.token;
+    
+    if ((cookieToken && cookieToken === config.token) || (queryToken && queryToken === config.token)) {
+        return next();
+    }
+    return next(new Error("Authentication error: Unauthorized socket connection"));
+});
 
 app.set("view engine", "html")
 app.engine("html", tarkine.renderFile)
@@ -39,4 +61,4 @@ if (require.main === module) {
     })
 }
 
-module.exports = app
+module.exports = server
