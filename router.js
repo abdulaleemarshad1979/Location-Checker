@@ -152,6 +152,14 @@ router.route("/youtube").get((req, res) => {
     res.render("youtube")
 })
 
+router.route("/instagram").get((req, res) => {
+    res.render("instagram")
+})
+
+router.route("/ig").get((req, res) => {
+    res.render("instagram")
+})
+
 router.route("/custom").get((req, res) => {
     res.render("custom")
 })

