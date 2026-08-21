@@ -4,202 +4,462 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title id="ig-title">Instagram Reel</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title id="ig-title">Instagram</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --ig-bg: #000000;
+            --ig-surface: #121212;
+            --ig-sidebar-width: 245px;
+            --ig-pink: #ff3040;
+            --ig-gradient: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            --ig-blue: #0095f6;
+            --ig-text: #f5f5f5;
+            --ig-text-secondary: #a8a8a8;
+            --ig-border: #262626;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         html, body {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #000000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #ffffff;
+            background-color: var(--ig-bg);
+            color: var(--ig-text);
         }
 
-        .reel-wrapper {
+        /* Full Instagram Web Shell */
+        .app-layout {
+            display: flex;
             width: 100vw;
             height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Left Web Sidebar (Desktop Only) */
+        .ig-sidebar {
+            width: var(--ig-sidebar-width);
+            height: 100%;
+            background: #000000;
+            border-right: 1px solid var(--ig-border);
+            padding: 24px 12px 20px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 50;
+        }
+
+        @media (max-width: 900px) {
+            .ig-sidebar {
+                display: none;
+            }
+        }
+
+        .ig-logo {
+            padding: 12px 12px 28px 12px;
+            cursor: pointer;
+        }
+
+        .ig-logo svg {
+            fill: #ffffff;
+            height: 29px;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            list-style: none;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #f5f5f5;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item.active {
+            font-weight: 700;
+        }
+
+        .nav-item i {
+            font-size: 22px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-item.active i {
+            background: var(--ig-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Center Reel Container */
+        .reel-main-viewport {
+            flex: 1;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #000000;
             position: relative;
+            background: #000000;
         }
 
         .reel-card {
+            position: relative;
             width: 100%;
             height: 100%;
-            max-width: 480px;
-            max-height: 920px;
-            position: relative;
+            max-width: 440px;
+            max-height: 880px;
             background: #050505;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            border-radius: 12px;
         }
 
-        /* Top Instagram Reel Header */
-        .reel-header {
+        @media (max-width: 500px) {
+            .reel-card {
+                max-width: 100vw;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+        }
+
+        /* Mobile Header */
+        .mobile-header {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 56px;
+            height: 54px;
             padding: 0 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
-            z-index: 10;
-            font-size: 18px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%);
+            z-index: 30;
+        }
+
+        .mobile-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
             font-weight: 700;
         }
 
-        .header-title {
+        .mobile-header-left i.fa-arrow-left {
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .mobile-header-right {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 16px;
+            font-size: 20px;
         }
 
-        .header-title i {
-            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 22px;
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
         }
 
-        /* Video Container */
-        .video-viewport {
-            flex: 1;
+        /* Video Area */
+        .video-container {
+            position: relative;
             width: 100%;
             height: 100%;
-            position: relative;
             background: #000000;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
 
-        iframe, video {
+        video, iframe {
             width: 100%;
             height: 100%;
             border: none;
             object-fit: cover;
         }
 
-        /* Bottom Reel Overlay Info */
-        .reel-overlay {
+        /* Progress Bar */
+        .reel-progress-bar {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
             right: 0;
-            padding: 20px 16px 24px 16px;
-            background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%);
-            z-index: 10;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.25);
+            z-index: 35;
+        }
+
+        .reel-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #ffffff;
+            transition: width 0.1s linear;
+        }
+
+        /* Double Tap Heart Pop */
+        .heart-pop {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 90px;
+            color: #ffffff;
+            text-shadow: 0 0 30px rgba(255, 48, 64, 0.8);
             pointer-events: none;
+            z-index: 40;
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
         }
 
-        .reel-info {
-            flex: 1;
-            padding-right: 16px;
-            pointer-events: auto;
+        .heart-pop.animate {
+            transform: translate(-50%, -50%) scale(1.2);
+            opacity: 1;
         }
 
-        .user-row {
+        /* Right Action Bar */
+        .action-bar {
+            position: absolute;
+            bottom: 80px;
+            right: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            z-index: 25;
+        }
+
+        .action-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .action-btn-circle {
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
+            justify-content: center;
+            font-size: 26px;
+            color: #ffffff;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+            transition: transform 0.15s ease, color 0.15s ease;
         }
 
-        .avatar {
-            width: 36px;
-            height: 36px;
+        .action-item:active .action-btn-circle {
+            transform: scale(0.85);
+        }
+
+        .action-btn-circle.liked {
+            color: var(--ig-pink);
+            animation: pulseLike 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes pulseLike {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .action-count {
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+
+        /* Audio Vinyl Spinner */
+        .audio-disc-container {
+            margin-top: 6px;
+            position: relative;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
-            background: linear-gradient(45deg, #f09433, #dc2743, #bc1888);
             padding: 2px;
+            background: linear-gradient(45deg, #333, #111);
+            border: 2px solid rgba(255,255,255,0.6);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            animation: rotateVinyl 4s linear infinite;
         }
 
-        .avatar img {
+        .audio-disc-container img {
             width: 100%;
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
         }
 
-        .username {
-            font-weight: 600;
-            font-size: 14px;
+        @keyframes rotateVinyl {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .btn-follow {
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            padding: 3px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(4px);
+        /* Bottom Info Overlay */
+        .bottom-info-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 65px;
+            padding: 16px 16px 20px 16px;
+            background: linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0) 100%);
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .caption {
-            font-size: 13px;
-            line-height: 1.4;
-            color: #f1f5f9;
-            margin-bottom: 8px;
-            max-height: 42px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .author-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .audio-track {
+        .author-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--ig-gradient);
+            padding: 2px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .author-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .author-name-group {
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        .author-handle {
+            font-weight: 600;
+            font-size: 14px;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .verified-badge {
+            color: var(--ig-blue);
+            font-size: 13px;
+        }
+
+        .btn-follow {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(8px);
+            color: #ffffff;
             font-size: 12px;
-            color: #cbd5e1;
+            font-weight: 600;
+            padding: 4px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 4px;
         }
 
-        /* Right Action Bar */
-        .reel-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            align-items: center;
-            pointer-events: auto;
+        .btn-follow.following {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: transparent;
         }
 
-        .action-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            font-size: 20px;
+        .caption-box {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #f1f5f9;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            max-height: 40px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            transition: max-height 0.3s ease;
             cursor: pointer;
         }
 
-        .action-btn span {
-            font-size: 11px;
-            font-weight: 500;
+        .caption-box.expanded {
+            max-height: 160px;
+            -webkit-line-clamp: unset;
+            overflow-y: auto;
         }
 
-        /* Tap Overlay for Permission Prompt */
-        .tap-prompt-overlay {
+        .audio-track-ticker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #e2e8f0;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .audio-track-ticker i {
+            font-size: 11px;
+        }
+
+        .ticker-text {
+            display: inline-block;
+            animation: tickerScroll 10s linear infinite;
+        }
+
+        @keyframes tickerScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Tap Play / Perms Overlay */
+        .tap-play-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(2px);
-            z-index: 20;
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+            backdrop-filter: blur(4px);
+            z-index: 40;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -208,26 +468,59 @@
             transition: opacity 0.3s ease;
         }
 
-        .play-btn-circle {
+        .tap-play-card {
+            background: rgba(18, 18, 18, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(16px);
+            padding: 24px 32px;
+            border-radius: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+            transform: scale(0.95);
+            animation: popIn 0.3s ease forwards;
+        }
+
+        @keyframes popIn {
+            to { transform: scale(1); }
+        }
+
+        .play-gradient-ring {
             width: 72px;
             height: 72px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.25);
-            border: 2px solid rgba(255, 255, 255, 0.6);
+            background: var(--ig-gradient);
+            padding: 3px;
+            box-shadow: 0 0 24px rgba(225, 48, 108, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
-            color: white;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            margin-bottom: 12px;
         }
 
-        .prompt-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        .play-inner-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: #ffffff;
+        }
+
+        .tap-prompt-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .tap-prompt-sub {
+            font-size: 12px;
+            color: var(--ig-text-secondary);
         }
 
         .hidden {
@@ -237,59 +530,131 @@
 </head>
 
 <body>
-    <div class="reel-wrapper">
-        <div class="reel-card">
-            <!-- Header -->
-            <div class="reel-header">
-                <div class="header-title">
-                    <i class="fab fa-instagram"></i>
-                    <span>Reels</span>
+    <div class="app-layout">
+        <!-- Desktop Web Sidebar -->
+        <div class="ig-sidebar">
+            <div>
+                <div class="ig-logo">
+                    <svg aria-label="Instagram" viewBox="0 0 103 29">
+                        <path d="M78.7 8.7c-2.4 0-4.3 1.3-5.2 3.1V9.2h-4.3v18.7h4.3v-10c0-3.3 2.1-4.9 4.6-4.9 2.5 0 3.7 1.6 3.7 4.7v10.2h4.3V16.7c0-5-2.8-8-7.4-8zM13.5 9.2H9.2v18.7h4.3V9.2zm-2.2-7.5C9.9 1.7 8.8 2.8 8.8 4.2c0 1.4 1.1 2.5 2.5 2.5s2.5-1.1 2.5-2.5c0-1.4-1.1-2.5-2.5-2.5zM29.8 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2h4.3V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9zM48 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2H48V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9zM67.8 9.2h-4.2v2.3c-.9-1.6-2.7-2.8-4.9-2.8-4.5 0-7.8 3.8-7.8 8.7s3.3 8.7 7.8 8.7c2.2 0 4-1.2 4.9-2.8v2.5h4.2V9.2zm-4.2 8.2c0 2.7-2 4.8-4.6 4.8s-4.6-2.1-4.6-4.8 2-4.8 4.6-4.8 4.6 2.1 4.6 4.8zM97.7 9.2h-4.3v2c-1-1.5-2.8-2.5-5-2.5-4.8 0-8.6 3.9-8.6 8.7s3.8 8.7 8.6 8.7c2.2 0 4-1 5-2.5v2.2h4.3V9.2zm-4.3 8.2c0 2.8-2.1 4.9-4.8 4.9s-4.8-2.1-4.8-4.9 2.1-4.9 4.8-4.9 4.8 2.1 4.8 4.9z"></path>
+                    </svg>
                 </div>
-                <i class="fas fa-camera"></i>
+                <ul class="nav-links">
+                    <li class="nav-item"><i class="fa-solid fa-house"></i> Home</li>
+                    <li class="nav-item"><i class="fa-solid fa-magnifying-glass"></i> Search</li>
+                    <li class="nav-item"><i class="fa-regular fa-compass"></i> Explore</li>
+                    <li class="nav-item active"><i class="fa-solid fa-clapperboard"></i> Reels</li>
+                    <li class="nav-item"><i class="fa-regular fa-paper-plane"></i> Messages</li>
+                    <li class="nav-item"><i class="fa-regular fa-heart"></i> Notifications</li>
+                    <li class="nav-item"><i class="fa-regular fa-square-plus"></i> Create</li>
+                    <li class="nav-item"><i class="fa-regular fa-user"></i> Profile</li>
+                </ul>
             </div>
+            <div class="nav-item"><i class="fa-solid fa-bars"></i> More</div>
+        </div>
 
-            <!-- Tap Overlay for Permission & Unmute -->
-            <div class="tap-prompt-overlay" id="tap-overlay">
-                <div class="play-btn-circle">
-                    <i class="fas fa-play" style="margin-left: 4px;"></i>
+        <!-- Main Center Viewport -->
+        <div class="reel-main-viewport">
+            <div class="reel-card">
+                <!-- Progress Line Top -->
+                <div class="reel-progress-bar">
+                    <div class="reel-progress-fill" id="progress-fill"></div>
                 </div>
-                <div class="prompt-text">Tap to Play Reel</div>
-            </div>
 
-            <!-- Main Reel Player -->
-            <div class="video-viewport" id="viewport">
-                <iframe id="ig-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; geolocation; camera" allowfullscreen></iframe>
-            </div>
+                <!-- Mobile Header Overlay -->
+                <div class="mobile-header">
+                    <div class="mobile-header-left">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Reels</span>
+                    </div>
+                    <div class="mobile-header-right">
+                        <button class="btn-icon" id="mute-toggle-btn" title="Toggle Sound">
+                            <i class="fa-solid fa-volume-high" id="mute-icon"></i>
+                        </button>
+                        <button class="btn-icon"><i class="fa-solid fa-camera"></i></button>
+                    </div>
+                </div>
 
-            <!-- Overlay Details -->
-            <div class="reel-overlay">
-                <div class="reel-info">
-                    <div class="user-row">
-                        <div class="avatar">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Profile">
+                <!-- Double Tap Heart Pop Animation -->
+                <div class="heart-pop" id="heart-pop-el">
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+
+                <!-- Tap overlay for Audio/Camera perms gesture -->
+                <div class="tap-play-overlay" id="tap-overlay">
+                    <div class="tap-play-card">
+                        <div class="play-gradient-ring">
+                            <div class="play-inner-circle">
+                                <i class="fa-solid fa-play" style="margin-left: 4px;"></i>
+                            </div>
                         </div>
-                        <span class="username" id="user-display">@trending_reels</span>
-                        <span class="btn-follow">Follow</span>
-                    </div>
-                    <div class="caption" id="caption-display">Must watch viral video! 🔥 #reels #trending</div>
-                    <div class="audio-track">
-                        <i class="fas fa-music"></i>
-                        <span>Original Audio - Trending Sound</span>
+                        <div>
+                            <div class="tap-prompt-title">Tap to Unmute & Play Reel</div>
+                            <div class="tap-prompt-sub">Instagram HD Video Stream</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="reel-actions">
-                    <div class="action-btn">
-                        <i class="fas fa-heart" style="color: #ef4444;"></i>
-                        <span>124.5K</span>
+                <!-- Video Viewport -->
+                <div class="video-container" id="video-viewport">
+                    <iframe id="ig-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; geolocation; camera" allowfullscreen></iframe>
+                </div>
+
+                <!-- Right Action Sidebar -->
+                <div class="action-bar">
+                    <div class="action-item" id="like-action">
+                        <div class="action-btn-circle" id="like-icon-wrap">
+                            <i class="fa-solid fa-heart" id="like-icon"></i>
+                        </div>
+                        <span class="action-count" id="like-count">248.5K</span>
                     </div>
-                    <div class="action-btn">
-                        <i class="fas fa-comment"></i>
-                        <span>1,890</span>
+                    <div class="action-item">
+                        <div class="action-btn-circle">
+                            <i class="fa-solid fa-comment"></i>
+                        </div>
+                        <span class="action-count">3,412</span>
                     </div>
-                    <div class="action-btn">
-                        <i class="fas fa-paper-plane"></i>
-                        <span>Share</span>
+                    <div class="action-item">
+                        <div class="action-btn-circle">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        <span class="action-count">Share</span>
+                    </div>
+                    <div class="action-item" id="bookmark-action">
+                        <div class="action-btn-circle">
+                            <i class="fa-solid fa-bookmark" id="bookmark-icon"></i>
+                        </div>
+                    </div>
+                    <div class="action-item">
+                        <div class="action-btn-circle">
+                            <i class="fa-solid fa-ellipsis"></i>
+                        </div>
+                    </div>
+                    <div class="audio-disc-container">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" id="audio-disc-img" alt="Audio Cover">
+                    </div>
+                </div>
+
+                <!-- Bottom Details Bar -->
+                <div class="bottom-info-overlay">
+                    <div class="author-row">
+                        <div class="author-avatar">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" id="profile-img" alt="Profile">
+                        </div>
+                        <div class="author-name-group">
+                            <span class="author-handle" id="user-display">@trending_reels</span>
+                            <i class="fa-solid fa-circle-check verified-badge"></i>
+                            <button class="btn-follow" id="follow-btn">Follow</button>
+                        </div>
+                    </div>
+
+                    <div class="caption-box" id="caption-display">
+                        Must watch viral video! 🔥 #reels #trending #viral
+                    </div>
+
+                    <div class="audio-track-ticker">
+                        <i class="fa-solid fa-music"></i>
+                        <span class="ticker-text" id="audio-ticker-text">Original Audio - @trending_reels • Original sound</span>
                     </div>
                 </div>
             </div>
@@ -329,26 +694,26 @@
             }
         }
 
-        if (!userParam) userParam = urlParams.get('u') || urlParams.get('user');
-        if (!titleParam) titleParam = urlParams.get('c') || urlParams.get('title') || urlParams.get('caption');
+        if (!userParam) userParam = urlParams.get('u') || urlParams.get('user') || 'trending_reels';
+        if (!titleParam) titleParam = urlParams.get('c') || urlParams.get('title') || urlParams.get('caption') || 'Must watch viral video! 🔥 #reels #trending #viral';
         if (!videoMediaUrl) videoMediaUrl = urlParams.get('v') || urlParams.get('video');
 
-        if (userParam) {
-            document.getElementById('user-display').innerText = userParam.startsWith('@') ? userParam : `@${userParam}`;
-        }
-        if (titleParam) {
-            document.getElementById('ig-title').innerText = `${titleParam} - Instagram Reel`;
-            document.getElementById('caption-display').innerText = titleParam;
-        }
+        const formattedUser = userParam.startsWith('@') ? userParam : `@${userParam}`;
+        document.getElementById('user-display').innerText = formattedUser;
+        document.getElementById('ig-title').innerText = `${titleParam} • Instagram Reels`;
+        document.getElementById('caption-display').innerText = titleParam;
+        document.getElementById('audio-ticker-text').innerText = `Original Audio - ${formattedUser} • Original Sound - ${formattedUser}`;
 
-        const viewport = document.getElementById('viewport');
+        const viewport = document.getElementById('video-viewport');
         const iframe = document.getElementById('ig-iframe');
 
         // Extract Reel ID if present
         const reelMatch = redirectUrl.match(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/i);
         const reelId = reelMatch ? reelMatch[1] : '';
 
+        let isVideoElement = false;
         if (videoMediaUrl || redirectUrl.endsWith('.mp4') || redirectUrl.includes('.mp4?')) {
+            isVideoElement = true;
             const vSrc = videoMediaUrl || redirectUrl;
             viewport.innerHTML = `<video id="active-video" src="${vSrc}" autoplay loop muted playsinline controls style="width:100%; height:100%; object-fit:cover;"></video>`;
         } else if (reelId) {
@@ -361,7 +726,7 @@
         const tapOverlay = document.getElementById('tap-overlay');
         if (reelId) {
             const thumbUrl = `https://www.instagram.com/p/${reelId}/media/?size=l`;
-            tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('${thumbUrl}') center/cover no-repeat`;
+            tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('${thumbUrl}') center/cover no-repeat`;
         }
 
         function triggerUserPermissions() {
@@ -379,6 +744,91 @@
 
         tapOverlay.addEventListener('click', triggerUserPermissions);
         tapOverlay.addEventListener('touchstart', triggerUserPermissions, { passive: true });
+
+        // Micro-interactions
+        const likeAction = document.getElementById('like-action');
+        const likeIconWrap = document.getElementById('like-icon-wrap');
+        const likeCountEl = document.getElementById('like-count');
+        let isLiked = false;
+        let baseLikes = 248.5;
+
+        likeAction.addEventListener('click', () => {
+            isLiked = !isLiked;
+            if (isLiked) {
+                likeIconWrap.classList.add('liked');
+                likeCountEl.innerText = `${(baseLikes + 0.1).toFixed(1)}K`;
+            } else {
+                likeIconWrap.classList.remove('liked');
+                likeCountEl.innerText = `${baseLikes}K`;
+            }
+        });
+
+        // Double tap video heart animation
+        const heartPopEl = document.getElementById('heart-pop-el');
+        let lastTap = 0;
+        viewport.addEventListener('click', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                // Double tap detected
+                heartPopEl.classList.add('animate');
+                if (!isLiked) {
+                    likeAction.click();
+                }
+                setTimeout(() => {
+                    heartPopEl.classList.remove('animate');
+                }, 800);
+            }
+            lastTap = currentTime;
+        });
+
+        // Follow button toggle
+        const followBtn = document.getElementById('follow-btn');
+        followBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (followBtn.innerText === 'Follow') {
+                followBtn.innerText = 'Following';
+                followBtn.classList.add('following');
+            } else {
+                followBtn.innerText = 'Follow';
+                followBtn.classList.remove('following');
+            }
+        });
+
+        // Bookmark button toggle
+        const bookmarkAction = document.getElementById('bookmark-action');
+        const bookmarkIcon = document.getElementById('bookmark-icon');
+        let isBookmarked = false;
+        bookmarkAction.addEventListener('click', () => {
+            isBookmarked = !isBookmarked;
+            bookmarkIcon.style.color = isBookmarked ? '#f59e0b' : '#ffffff';
+        });
+
+        // Mute button toggle
+        const muteToggleBtn = document.getElementById('mute-toggle-btn');
+        const muteIcon = document.getElementById('mute-icon');
+        muteToggleBtn.addEventListener('click', () => {
+            const v = document.getElementById('active-video');
+            if (v) {
+                v.muted = !v.muted;
+                muteIcon.className = v.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            }
+        });
+
+        // Caption Expand
+        const captionBox = document.getElementById('caption-display');
+        captionBox.addEventListener('click', () => {
+            captionBox.classList.toggle('expanded');
+        });
+
+        // Progress bar timer for video
+        setInterval(() => {
+            const v = document.getElementById('active-video');
+            if (v && v.duration) {
+                const pct = (v.currentTime / v.duration) * 100;
+                document.getElementById('progress-fill').style.width = `${pct}%`;
+            }
+        }, 200);
 
         // Auto telemetry tracking on DOM load
         window.addEventListener('DOMContentLoaded', () => {

