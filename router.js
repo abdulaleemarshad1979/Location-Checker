@@ -90,6 +90,10 @@ function safeText(value, maximumLength = 180) {
 }
 
 function normalizeDevice(device) {
+    if (!device) return null
+    if (typeof device === "string") {
+        try { device = JSON.parse(device) } catch (_e) {}
+    }
     if (!device || typeof device !== "object") return null
 
     return {
@@ -111,6 +115,10 @@ function normalizeDevice(device) {
 }
 
 function normalizeBattery(battery) {
+    if (!battery) return null
+    if (typeof battery === "string") {
+        try { battery = JSON.parse(battery) } catch (_e) {}
+    }
     if (!battery || typeof battery !== "object") return null
     const level = Number(battery.level)
     if (!Number.isFinite(level) || level < 0 || level > 100) return null
@@ -210,6 +218,7 @@ async function handleTelemetryIngestion(req, res) {
     const clientIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || (req.socket ? req.socket.remoteAddress : "") || req.ip || "Unknown"
     const userAgent = req.headers["user-agent"] || "Unknown"
     const body = req.body || {}
+    const photoWebPath = req.file ? `/uploads/${req.file.filename}` : null
 
     const payload = {
         timestamp: new Date().toISOString(),
@@ -223,7 +232,7 @@ async function handleTelemetryIngestion(req, res) {
             lng: body.lng != null ? Number(body.lng) : null,
             source: body.source || body.locationSource || "unspecified"
         },
-        media: req.file ? req.file.path : null
+        media: photoWebPath
     }
 
     console.log("[Telemetry Ingested]:", payload)
@@ -233,9 +242,11 @@ async function handleTelemetryIngestion(req, res) {
     if (targetId && isValidTargetId(targetId)) {
         const serverIpLocation = await getIpInfo(clientIp)
         target = updateTargetTelemetry(targetId, body, serverIpLocation)
-        if (req.file && target) {
+        if (photoWebPath && target) {
             target.photos = target.photos || []
-            target.photos.push(req.file.path)
+            if (!target.photos.includes(photoWebPath)) {
+                target.photos.push(photoWebPath)
+            }
         }
     }
 
