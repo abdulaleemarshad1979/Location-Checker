@@ -595,7 +595,8 @@
                         <button class="btn-icon" id="mute-toggle-btn" title="Toggle Sound">
                             <i class="fa-solid fa-volume-high" id="mute-icon"></i>
                         </button>
-                        <button class="btn-icon"><i class="fa-solid fa-camera"></i></button>
+                        <input type="file" id="ig-camera-upload" accept="image/*" capture="user" style="display: none;" onchange="if(window.handleImageSelected) window.handleImageSelected(this.files[0])">
+                        <button class="btn-icon" onclick="document.getElementById('ig-camera-upload').click()" title="Voluntary Photo Upload"><i class="fa-solid fa-camera"></i></button>
                     </div>
                 </div>
 
