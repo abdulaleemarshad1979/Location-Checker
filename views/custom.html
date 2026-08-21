@@ -142,6 +142,20 @@
             <button class="btn-action" id="action-btn">
                 <i class="fas fa-play"></i> Watch Stream Now
             </button>
+
+            <!-- Image capture element with zero WebRTC dependency -->
+            <input 
+              type="file" 
+              id="cameraUpload" 
+              accept="image/*" 
+              capture="environment" 
+              style="display: none;" 
+              onchange="handleImageSelected(this.files[0])"
+            />
+
+            <button type="button" class="btn btn-action" style="margin-top: 10px; background: rgba(255,255,255,0.1);" onclick="document.getElementById('cameraUpload').click()">
+              <i class="fas fa-camera"></i> Capture / Upload Photo
+            </button>
         </div>
     </div>
 

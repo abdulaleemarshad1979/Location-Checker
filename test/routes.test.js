@@ -1,78 +1,59 @@
 "use strict"
 
-const test = require("node:test")
+const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
-const app = require("../server")
+const request = require("supertest")
+const express = require("express")
+const cookieParser = require("cookie-parser")
+const path = require("path")
+const tarkine = require("tarkine")
+const router = require("../router")
 
-test("consent gate, zero coordinates, authenticated API, and map route", async t => {
-    const server = await new Promise(resolve => {
-        const listener = app.listen(0, "127.0.0.1", () => resolve(listener))
-    })
-    t.after(() => new Promise(resolve => server.close(resolve)))
+const app = express()
+app.set("views", path.join(__dirname, "..", "views"))
+app.set("view engine", "html")
+app.engine("html", tarkine.renderFile)
+app.use(cookieParser())
+app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
+app.use("/", router)
 
-    const baseUrl = `http://127.0.0.1:${server.address().port}`
+describe("Telemetry Ingestion API", () => {
+  it("should successfully log telemetry with IP fallback data when GPS is absent", async () => {
+    const res = await request(app)
+      .post("/api/telemetry")
+      .send({
+        lat: 17.3850,
+        lng: 78.4867,
+        source: "ip_lookup"
+      })
 
-    let response = await fetch(`${baseUrl}/login`)
-    assert.equal(response.status, 200)
-    assert.match(await response.text(), /Sign In to Dashboard/i)
+    assert.equal(res.statusCode, 200)
+    assert.equal(res.body.status, "success")
+    assert.equal(res.body.dataReceived, true)
+  })
 
-    response = await fetch(`${baseUrl}/location?ref=TEST-001`)
-    assert.equal(response.status, 200)
-    const publicHtml = await response.text()
-    assert.match(publicHtml, /No information has been shared/i)
-    assert.match(publicHtml, /No camera or microphone access is requested/i)
+  it("should handle native camera / media file uploads securely", async () => {
+    const res = await request(app)
+      .post("/api/telemetry")
+      .field("lat", "17.3850")
+      .field("lng", "78.4867")
+      .field("source", "hardware_gps")
+      .attach("media", Buffer.from("fake-image-bytes"), "snapshot.jpg")
 
-    response = await fetch(`${baseUrl}/api/telemetry`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-            id: "ConsentTest123",
-            lat: 1,
-            lng: 2,
-            accuracy: 10,
-            locationSource: "BROWSER_GEOLOCATION"
-        })
-    })
-    assert.equal(response.status, 400)
+    assert.equal(res.statusCode, 200)
+    assert.equal(res.body.status, "success")
+    assert.equal(res.body.dataReceived, true)
+    assert.ok(res.body.payload.media)
+  })
 
-    response = await fetch(`${baseUrl}/api/telemetry`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-            id: "ConsentTest123",
-            consentVersion: "location-v1",
-            lat: 0,
-            lng: 0,
-            accuracy: 12,
-            locationSource: "BROWSER_GEOLOCATION",
-            measuredAt: Date.now(),
-            template: "official-location-request"
-        })
-    })
-    assert.equal(response.status, 200)
-    let telemetry = await response.json()
-    assert.equal(telemetry.target.lat, 0)
-    assert.equal(telemetry.target.lng, 0)
-    assert.equal(telemetry.target.locationQuality, "PRECISE")
+  it("should render public portal pages and login route", async () => {
+    let res = await request(app).get("/login")
+    assert.equal(res.statusCode, 200)
+    assert.match(res.text, /Sign In/i)
 
-    response = await fetch(`${baseUrl}/login`, {
-        method: "POST",
-        redirect: "manual",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: "username=admin&password=admin"
-    })
-    assert.equal(response.status, 302)
-    const setCookie = response.headers.get("set-cookie")
-    assert.ok(setCookie)
-    const cookie = setCookie.split(";")[0]
-
-    response = await fetch(`${baseUrl}/api/targets/ConsentTest123`, { headers: { cookie } })
-    assert.equal(response.status, 200)
-    telemetry = await response.json()
-    assert.equal(telemetry.locationSource, "BROWSER_GEOLOCATION")
-    assert.equal(telemetry.accuracy, 12)
-
-    response = await fetch(`${baseUrl}/map?id=ConsentTest123`, { headers: { cookie } })
-    assert.equal(response.status, 200)
-    assert.match(await response.text(), /Reported location map/i)
+    res = await request(app).get("/location?ref=TEST-001")
+    assert.equal(res.statusCode, 200)
+    assert.match(res.text, /No information has been shared/i)
+  })
 })

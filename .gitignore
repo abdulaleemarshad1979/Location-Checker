@@ -3,3 +3,6 @@ node_modules/
 *.log
 .ds_store
 .gemini/
+public/uploads/*
+!public/uploads/.gitkeep
+
