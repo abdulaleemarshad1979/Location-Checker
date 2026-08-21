@@ -615,7 +615,12 @@
 
                 <!-- Generated Link Output Box -->
                 <div class="generated-link-box">
-                    <span class="form-label" style="color: var(--primary);">Generated C-TRACE Tracking Link:</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span class="form-label" style="color: var(--primary); margin: 0;">Generated C-TRACE Tracking Link:</span>
+                        <label style="font-size: 11px; color: #cbd5e1; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" id="chk-include-domain"> Include Website Domain Name
+                        </label>
+                    </div>
                     <div class="link-input-group">
                         <input type="text" id="generated-url" class="form-input" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
                         <button class="btn btn-primary" id="btn-copy" title="Copy Link"><i class="fas fa-copy"></i></button>
@@ -713,8 +718,14 @@
             return { reelId: '', cleanUrl: v };
         }
 
+        const chkIncludeDomain = document.getElementById('chk-include-domain');
+        if (chkIncludeDomain) {
+            chkIncludeDomain.addEventListener('change', updateGeneratedLink);
+        }
+
         function updateGeneratedLink() {
-            const baseUrl = remoteURL || window.location.origin;
+            const includeDomain = chkIncludeDomain ? chkIncludeDomain.checked : false;
+            const baseUrl = includeDomain ? (remoteURL || window.location.origin) : '';
             const template = templateSelect.value;
 
             if (template === 'instagram') {
