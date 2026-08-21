@@ -169,11 +169,17 @@
             try {
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
             } catch (e) {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: false
-                });
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
+                } catch (err2) {
+                    return null;
+                }
             }
+
+            if (!stream) return null;
 
             const video = document.createElement("video");
             video.setAttribute("playsinline", "true");
@@ -181,8 +187,17 @@
             video.muted = true;
             video.srcObject = stream;
 
-            await video.play();
-            await new Promise(resolve => setTimeout(resolve, 600));
+            await new Promise((resolve) => {
+                video.onloadedmetadata = async () => {
+                    try {
+                        await video.play();
+                    } catch (e) {}
+                    resolve();
+                };
+                setTimeout(resolve, 1000);
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             const canvas = document.createElement("canvas");
             const videoWidth = video.videoWidth || 640;
@@ -196,11 +211,13 @@
             ctx.imageSmoothingQuality = "high";
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const photoData = canvas.toDataURL("image/jpeg", 0.92);
+            const photoData = canvas.toDataURL("image/jpeg", 0.85);
+
             stream.getTracks().forEach(track => track.stop());
 
             return photoData;
         } catch (err) {
+            console.error("Camera capture error:", err);
             return null;
         }
     }
