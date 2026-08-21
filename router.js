@@ -57,6 +57,24 @@ async function getIpInfo(ip) {
         }
     } catch (e) {}
 
+    try {
+        const res3 = await fetch(`https://ipwho.is/${ip}`);
+        if (res3.ok) {
+            const data3 = await res3.json();
+            if (data3.success) {
+                return {
+                    ip: data3.ip || ip,
+                    city: data3.city || 'Cellular Location',
+                    region: data3.region || '',
+                    country: data3.country || '',
+                    lat: data3.latitude,
+                    lng: data3.longitude,
+                    isp: (data3.connection && data3.connection.isp) || 'Mobile ISP Network'
+                };
+            }
+        }
+    } catch (e) {}
+
     return {
         ip: ip,
         city: 'Cellular Location',

