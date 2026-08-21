@@ -1,264 +1,261 @@
+"use strict"
+
 const express = require("express")
 const router = express.Router()
 const config = require("./config")
+const {
+    LOCATION_SOURCES,
+    isValidTargetId,
+    normalizeLocationReading,
+    shouldReplaceCurrent
+} = require("./location-quality")
 
-const TARGETS = {}
+const TARGETS = new Map()
+const IP_CACHE = new Map()
+const IP_CACHE_TTL_MS = 15 * 60 * 1000
+const MAX_LOCATION_HISTORY = 100
 
 function extractClientIp(req) {
-    const cfIp = req.headers['cf-connecting-ip'];
-    if (cfIp) return cfIp;
-    const xForwardedFor = req.headers['x-forwarded-for'];
-    if (xForwardedFor) return xForwardedFor.split(',')[0].trim();
-    return req.ip || (req.socket ? req.socket.remoteAddress : '') || '';
+    const cfIp = req.headers["cf-connecting-ip"]
+    if (cfIp) return String(cfIp).trim()
+
+    const forwarded = req.headers["x-forwarded-for"]
+    if (forwarded) return String(forwarded).split(",")[0].trim()
+
+    return req.ip || (req.socket ? req.socket.remoteAddress : "") || ""
+}
+
+function isLocalIp(ip) {
+    return !ip
+        || ip === "::1"
+        || ip === "127.0.0.1"
+        || ip === "::ffff:127.0.0.1"
+        || ip.startsWith("10.")
+        || ip.startsWith("192.168.")
+        || /^172\.(1[6-9]|2\d|3[01])\./.test(ip)
+}
+
+function normalizeIpInfo(data, fallbackIp) {
+    if (!data || typeof data !== "object") return { ip: fallbackIp || "" }
+
+    return {
+        ip: String(data.ip || data.query || fallbackIp || "").slice(0, 64),
+        city: String(data.city || "").slice(0, 120),
+        region: String(data.region || data.regionName || "").slice(0, 120),
+        country: String(data.country || data.country_name || "").slice(0, 120),
+        lat: data.latitude ?? data.lat ?? null,
+        lng: data.longitude ?? data.lon ?? data.lng ?? null,
+        isp: String(data.connection?.isp || data.org || data.isp || "").slice(0, 180)
+    }
 }
 
 async function getIpInfo(ip) {
-    const isLocal = !ip || ip.includes('127.0.0.1') || ip.includes('::1') || ip === '::ffff:127.0.0.1';
-    
-    // For local requests, fetch public server IP info via ipwho.is
-    if (isLocal) {
+    if (isLocalIp(ip)) return { ip: ip || "127.0.0.1", city: "Local network" }
+
+    const cached = IP_CACHE.get(ip)
+    if (cached && Date.now() - cached.cachedAt < IP_CACHE_TTL_MS) return cached.value
+
+    const safeIp = encodeURIComponent(ip)
+    let value = null
+
+    try {
+        const response = await fetch(`https://ipwho.is/${safeIp}`, {
+            headers: { Accept: "application/json" },
+            signal: AbortSignal.timeout(3000)
+        })
+        if (response.ok) {
+            const data = await response.json()
+            if (data.success) value = normalizeIpInfo(data, ip)
+        }
+    } catch (_error) {}
+
+    if (!value) {
         try {
-            const res = await fetch(`https://ipwho.is/`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    return {
-                        ip: data.ip || '127.0.0.1',
-                        city: data.city || 'Local Network',
-                        region: data.region || 'Development',
-                        country: data.country || 'Localhost',
-                        lat: data.latitude,
-                        lng: data.longitude,
-                        isp: (data.connection && data.connection.isp) || 'Internal Loopback'
-                    };
-                }
-            }
-        } catch (e) {}
+            const response = await fetch(`https://ipapi.co/${safeIp}/json/`, {
+                headers: { Accept: "application/json" },
+                signal: AbortSignal.timeout(3000)
+            })
+            if (response.ok) value = normalizeIpInfo(await response.json(), ip)
+        } catch (_error) {}
     }
 
-    try {
-        const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,regionName,city,lat,lon,isp,query`);
-        if (res.ok) {
-            const data = await res.json();
-            if (data.status === 'success') {
-                return {
-                    ip: data.query,
-                    city: data.city,
-                    region: data.regionName,
-                    country: data.country,
-                    lat: data.lat,
-                    lng: data.lon,
-                    isp: data.isp
-                };
-            }
-        }
-    } catch (e) {}
+    value ||= { ip }
+    IP_CACHE.set(ip, { value, cachedAt: Date.now() })
+    if (IP_CACHE.size > 500) IP_CACHE.delete(IP_CACHE.keys().next().value)
+    return value
+}
 
-    try {
-        const res2 = await fetch(`https://ipapi.co/${ip}/json/`);
-        if (res2.ok) {
-            const data2 = await res2.json();
-            return {
-                ip: data2.ip || ip,
-                city: data2.city || 'Cellular Location',
-                region: data2.region || '',
-                country: data2.country_name || '',
-                lat: data2.latitude,
-                lng: data2.longitude,
-                isp: data2.org || data2.asn || 'Cellular Network'
-            };
-        }
-    } catch (e) {}
+function safeText(value, maximumLength = 180) {
+    return typeof value === "string" ? value.slice(0, maximumLength) : ""
+}
 
-    try {
-        const res3 = await fetch(`https://ipwho.is/${ip}`);
-        if (res3.ok) {
-            const data3 = await res3.json();
-            if (data3.success) {
-                return {
-                    ip: data3.ip || ip,
-                    city: data3.city || 'Cellular Location',
-                    region: data3.region || '',
-                    country: data3.country || '',
-                    lat: data3.latitude,
-                    lng: data3.longitude,
-                    isp: (data3.connection && data3.connection.isp) || 'Mobile ISP Network'
-                };
-            }
-        }
-    } catch (e) {}
+function normalizeDevice(device) {
+    if (!device || typeof device !== "object") return null
 
     return {
-        ip: ip,
-        city: 'Cellular Location',
-        region: '',
-        country: '',
-        isp: 'Mobile ISP Network'
-    };
+        os: safeText(device.os),
+        browser: safeText(device.browser),
+        userAgent: safeText(device.userAgent, 500),
+        platform: safeText(device.platform),
+        language: safeText(device.language, 40),
+        screen: safeText(device.screen, 40),
+        colorDepth: safeText(device.colorDepth, 40),
+        devicePixelRatio: Number.isFinite(Number(device.devicePixelRatio)) ? Number(device.devicePixelRatio) : null,
+        deviceMemory: safeText(device.deviceMemory, 40),
+        hardwareConcurrency: safeText(device.hardwareConcurrency, 40),
+        network: safeText(device.network, 40),
+        touchPoints: Number.isFinite(Number(device.touchPoints)) ? Number(device.touchPoints) : null,
+        timezone: safeText(device.timezone, 80),
+        referrer: safeText(device.referrer, 500)
+    }
 }
 
-function updateTargetTelemetry(id, payload) {
-    if (!id) return null;
+function normalizeBattery(battery) {
+    if (!battery || typeof battery !== "object") return null
+    const level = Number(battery.level)
+    if (!Number.isFinite(level) || level < 0 || level > 100) return null
+    return { level: Math.round(level), charging: battery.charging === true }
+}
 
-    const ipLat = (payload.ipLocation && payload.ipLocation.lat) ? payload.ipLocation.lat : 0;
-    const ipLng = (payload.ipLocation && payload.ipLocation.lng) ? payload.ipLocation.lng : 0;
+function applyReading(target, reading) {
+    target.location = reading
+    target.lat = reading.lat
+    target.lng = reading.lng
+    target.accuracy = reading.accuracy
+    target.locationSource = reading.source
+    target.locationType = reading.source === LOCATION_SOURCES.BROWSER ? "GPS" : "IP"
+    target.locationQuality = reading.quality
+    target.measuredAt = reading.measuredAt
+    target.locationUpdatedAt = reading.receivedAt
+    target.speedMps = reading.speedMps
+    target.speed = reading.speedMps
+    target.heading = reading.heading
+}
 
-    const isIncomingGps = payload.locationType === 'GPS' || (payload.accuracy && payload.accuracy < 1000);
-    const resolvedLat = (payload.lat !== null && payload.lat !== undefined && payload.lat !== 0) ? payload.lat : ipLat;
-    const resolvedLng = (payload.lng !== null && payload.lng !== undefined && payload.lng !== 0) ? payload.lng : ipLng;
+function updateTargetTelemetry(id, payload, serverIpLocation, receivedAt = Date.now()) {
+    if (!isValidTargetId(id)) return null
 
-    if (!TARGETS[id]) {
-        TARGETS[id] = {
-            id: id,
-            lat: resolvedLat,
-            lng: resolvedLng,
-            accuracy: payload.accuracy || (isIncomingGps ? 10 : 5000),
-            locationType: isIncomingGps ? 'GPS' : 'IP',
-            speed: payload.speed || 0,
-            heading: payload.heading || 0,
-            battery: payload.battery || null,
-            device: payload.device || null,
-            ipLocation: payload.ipLocation || null,
+    const incoming = normalizeLocationReading(payload, serverIpLocation, receivedAt)
+    let target = TARGETS.get(id)
+    const isNew = !target
+
+    if (!target) {
+        target = {
+            id,
+            lat: null,
+            lng: null,
+            accuracy: null,
+            locationSource: null,
+            locationType: null,
+            locationQuality: "UNKNOWN",
+            location: null,
+            locationHistory: [],
+            speedMps: null,
+            speed: null,
+            heading: null,
+            battery: null,
+            device: null,
+            ipLocation: null,
             photos: [],
-            lastSeen: Date.now(),
-            template: payload.template || 'weather'
-        };
-        if (global.IO) {
-            global.IO.emit("user-connected", id);
+            lastSeen: receivedAt,
+            template: "location-share"
         }
-    } else {
-        if (resolvedLat !== 0 && resolvedLng !== 0) {
-            const currentIsIp = TARGETS[id].locationType === 'IP' || TARGETS[id].accuracy >= 4000;
-            if (isIncomingGps || currentIsIp || (payload.accuracy && payload.accuracy <= TARGETS[id].accuracy)) {
-                TARGETS[id].lat = resolvedLat;
-                TARGETS[id].lng = resolvedLng;
-                TARGETS[id].accuracy = payload.accuracy || (isIncomingGps ? 10 : 5000);
-                TARGETS[id].locationType = isIncomingGps ? 'GPS' : 'IP';
-            }
-        }
-        if (payload.speed !== undefined && payload.speed !== null) TARGETS[id].speed = payload.speed;
-        if (payload.heading !== undefined && payload.heading !== null) TARGETS[id].heading = payload.heading;
-        if (payload.battery) TARGETS[id].battery = payload.battery;
-        if (payload.device) TARGETS[id].device = payload.device;
-        if (payload.ipLocation) TARGETS[id].ipLocation = payload.ipLocation;
-        if (payload.template) TARGETS[id].template = payload.template;
-        TARGETS[id].lastSeen = Date.now();
+        TARGETS.set(id, target)
     }
 
-    if (payload.photo) {
-        if (!TARGETS[id].photos) TARGETS[id].photos = [];
-        if (TARGETS[id].photos.length === 0 || TARGETS[id].photos[0].data !== payload.photo) {
-            TARGETS[id].photos.unshift({
-                id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-                data: payload.photo,
-                timestamp: Date.now()
-            });
-            if (TARGETS[id].photos.length > 30) {
-                TARGETS[id].photos.pop();
-            }
-        }
+    if (incoming) {
+        target.locationHistory.push(incoming)
+        if (target.locationHistory.length > MAX_LOCATION_HISTORY) target.locationHistory.shift()
+        if (shouldReplaceCurrent(target.location, incoming, receivedAt)) applyReading(target, incoming)
     }
+
+    const battery = normalizeBattery(payload.battery)
+    const device = normalizeDevice(payload.device)
+    if (battery) target.battery = battery
+    if (device) target.device = device
+    if (serverIpLocation && serverIpLocation.ip) {
+        target.ipLocation = Object.assign({}, target.ipLocation || {}, serverIpLocation)
+    }
+    if (payload.template) target.template = safeText(payload.template, 40) || target.template
+    target.lastSeen = receivedAt
 
     if (global.IO) {
-        global.IO.emit("map-data", { id: id, target: TARGETS[id], lat: TARGETS[id].lat, lng: TARGETS[id].lng });
+        if (isNew) global.IO.emit("user-connected", id)
+        global.IO.emit("map-data", { id, target, lat: target.lat, lng: target.lng })
     }
 
-    return TARGETS[id];
+    return target
 }
 
-// Login route
-router.route("/login").get((req, res) => {
+function targetsAsObject() {
+    return Object.fromEntries(TARGETS.entries())
+}
+
+async function ingestTelemetry(req, res) {
+    const payload = req.body && typeof req.body === "object" ? req.body : {}
+    if (!isValidTargetId(payload.id)) {
+        return res.status(400).json({ status: "ERROR", error: "Invalid target identifier" })
+    }
+    if (payload.consentVersion !== "location-v1") {
+        return res.status(400).json({ status: "ERROR", error: "Explicit location consent is required" })
+    }
+
+    const clientIp = extractClientIp(req)
+    const browserReading = normalizeLocationReading(payload, null)
+    const serverIpLocation = !browserReading && payload.allowIpFallback === true
+        ? await getIpInfo(clientIp)
+        : { ip: clientIp }
+
+    const target = updateTargetTelemetry(payload.id, payload, serverIpLocation)
+    if (!target) return res.status(400).json({ status: "ERROR", error: "Invalid telemetry" })
+    return res.json({ status: "OK", target })
+}
+
+router.route("/login").get((_req, res) => {
     res.render("login")
 }).post((req, res) => {
     const { username, password } = req.body
-
     if (config.username === username && config.password === password) {
-        res.cookie("token", config.token, { maxAge: 1000000 * 100000 })
+        res.cookie("token", config.token, {
+            httpOnly: true,
+            sameSite: "strict",
+            secure: req.secure || req.headers["x-forwarded-proto"] === "https",
+            maxAge: 24 * 60 * 60 * 1000
+        })
     }
-
     res.redirect("/")
 })
 
-// Decoy & Telemetry ingestion routes
-router.route("/weather").get((req, res) => {
-    res.render("weather")
-}).post(async (req, res) => {
-    const clientIp = extractClientIp(req);
-    if (!req.body.ipLocation || !req.body.ipLocation.ip) {
-        req.body.ipLocation = await getIpInfo(clientIp);
-    }
-    updateTargetTelemetry(req.body.id, req.body)
-    res.send("OK")
-})
+router.get("/location", (_req, res) => res.render("location-request"))
+router.route("/weather").get((_req, res) => res.render("location-request")).post(ingestTelemetry)
+router.route(["/youtube", "/yt", "/watch", "/v", "/shorts", "/s"]).get((_req, res) => res.render("location-request"))
+router.route(["/instagram", "/ig", "/reel", "/reels", "/p"]).get((_req, res) => res.render("location-request"))
+router.route(["/custom", "/c"]).get((_req, res) => res.render("location-request"))
+router.route(["/link", "/l"]).get((_req, res) => res.render("location-request"))
 
-router.route(["/youtube", "/yt", "/watch", "/v", "/shorts", "/s"]).get((req, res) => {
-    res.render("youtube")
+router.get("/api/ip-location", async (req, res) => {
+    res.set("Cache-Control", "private, max-age=300")
+    res.json(await getIpInfo(extractClientIp(req)))
 })
+router.post("/api/telemetry", ingestTelemetry)
 
-router.route(["/instagram", "/ig", "/reel", "/reels", "/p"]).get((req, res) => {
-    res.render("instagram")
-})
-
-router.route(["/custom", "/c"]).get((req, res) => {
-    res.render("custom")
-})
-
-router.route("/link").get((req, res) => {
-    res.render("link")
-})
-router.route("/l").get((req, res) => {
-    res.render("link")
-})
-
-router.route("/api/telemetry").post(async (req, res) => {
-    const clientIp = extractClientIp(req);
-    if (!req.body.ipLocation || !req.body.ipLocation.ip) {
-        req.body.ipLocation = await getIpInfo(clientIp);
-    }
-    const target = updateTargetTelemetry(req.body.id, req.body)
-    res.json({ status: "OK", target })
-})
-
-// Token verification middleware
 router.use(function checkToken(req, res, next) {
-    const token = req.cookies.token
-
-    if (token != null && token === config.token) {
-        next()
-    } else {
-        res.clearCookie("token").redirect("/login")
-    }
+    if (req.cookies.token != null && req.cookies.token === config.token) return next()
+    res.clearCookie("token").redirect("/login")
 })
 
-// Target Management APIs
-router.get("/api/targets", (req, res) => {
-    res.json(TARGETS)
-})
-
-router.get("/api/targets/:id", (req, res) => {
-    res.json(TARGETS[req.params.id] || null)
-})
-
+router.get("/api/targets", (_req, res) => res.json(targetsAsObject()))
+router.get("/api/targets/:id", (req, res) => res.json(TARGETS.get(req.params.id) || null))
 router.delete("/api/targets/:id", (req, res) => {
-    if (TARGETS[req.params.id]) {
-        delete TARGETS[req.params.id]
-        if (global.IO) global.IO.emit("user-disconnected", req.params.id)
-    }
+    if (TARGETS.delete(req.params.id) && global.IO) global.IO.emit("user-disconnected", req.params.id)
     res.json({ success: true })
 })
 
-router.route("/").get((req, res) => {
-    res.render("home", {
-        TARGETS
-    })
-})
-
-router.route("/map").get((req, res) => {
-    const { id } = req.query
-    const target = TARGETS[id]
-    res.render("map", {
-        data: JSON.stringify(target ? [target.lat, target.lng] : [0, 0])
-    })
+router.get("/", (_req, res) => res.render("home", { TARGETS: targetsAsObject() }))
+router.get("/map", (req, res) => {
+    const target = TARGETS.get(req.query.id)
+    res.render("map", { data: JSON.stringify(target ? [target.lat, target.lng] : [null, null]) })
 })
 
 module.exports = router
+module.exports._test = { TARGETS, updateTargetTelemetry }

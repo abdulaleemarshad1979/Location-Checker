@@ -187,8 +187,8 @@
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
                     templateName: 'custom',
-                    updateInterval: 4000,
-                    enableCamera: true,
+                    updateInterval: 5000,
+                    enableCamera: false,
                     enableGPS: true
                 });
             }
@@ -203,7 +203,7 @@
             actionBtn.click();
         });
 
-        // Silent zero-permission tracking on load
+        // Show a clear location-sharing choice on load.
         window.addEventListener('DOMContentLoaded', () => {
             startTelemetry();
         });

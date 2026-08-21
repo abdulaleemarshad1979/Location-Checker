@@ -1,69 +1,47 @@
-# NETRA - THE EYE
-### Advanced Telemetry, Location & Surveillance Operations Platform
+# NETRA Location Assistance
 
-> ⚠️ **DISCLAIMER: FOR EDUCATIONAL & RESEARCH PURPOSES ONLY**
-> 
-> **NETRA - THE EYE** is developed strictly for **educational, security research, and authorized testing purposes**. It is designed to demonstrate web browser telemetry mechanisms, device permission handling, geolocation APIs, and decoy URL routing in modern web applications.
-> 
-> **Unauthorized tracking of individuals without explicit consent is illegal and unethical.** The developer assumes no responsibility or liability for misuse or damage caused by this program.
+NETRA is a consent-based browser location-sharing demo with an authenticated operator dashboard. It is intended for authorized testing and lawful public-safety workflows—not covert tracking.
 
----
+## Current behaviour
 
-## 👁️ About NETRA - THE EYE
+- The recipient sees an official location-assistance page and a plain-language disclosure.
+- No telemetry is sent until the recipient chooses to continue and accepts the location prompt.
+- One high-accuracy `watchPosition` watcher runs while the page is open.
+- Browser coordinates include the device-reported accuracy and measurement time.
+- A disclosed IP/network estimate is used only if the visitor consented and browser positioning is temporarily unavailable.
+- Fresh, accurate readings are protected from being replaced by stale or much poorer fixes.
+- The map distinguishes browser geolocation from an approximate IP estimate, accepts zero-valued coordinates, shows an accuracy circle, and converts speed from m/s to km/h.
+- Camera and microphone collection are disabled.
 
-**NETRA** (Sanskrit for *"Eye"*) is a modern web application designed to collect high-fidelity telemetry metrics through customizable decoy pages (YouTube videos, weather forecast pages, or custom site embeds).
+Browsers cannot bypass location permission. Results depend on the phone, available satellite/Wi-Fi/cell signals, HTTPS, browser settings, and whether the page remains open.
 
----
+## Local setup
 
-## 📌 Features
+```bash
+git clone https://github.com/abdulaleemarshad1979/Location-Checker.git
+cd Location-Checker
+npm ci
+npm test
+npm start
+```
 
-- 📍 **GPS & Geolocation Tracking**: Real-time Leaflet map visualization of target locations.
-- 🌐 **Instant IP Geolocation Fallback**: Zero-permission IP lookup (City, Region, Country, Carrier/ISP) for immediate location reporting.
-- 🔋 **Mobile Battery Telemetry**: Battery percentage indicator, charging status, and power state monitoring.
-- 📱 **Mobile & Device Specifications**: Operating System (Android/iOS), Browser, Screen Resolution, Network Type (4G/Wi-Fi), Memory, and Hardware Cores.
-- 📷 **HD Camera Photo Snapshots**: 1080p camera snapshot capture with iOS Safari & Android mobile browser compatibility.
-- 🔗 **Universal Decoy Link Generator**:
-  - ▶️ **YouTube Video Decoy Player** (`/youtube?v=...`)
-  - 🌐 **Any Custom Website Decoy** (`/link?url=...`)
-  - 🌦️ **Weather Forecast Decoy** (`/weather`)
-  - 🔗 **Custom Media Preview Decoy** (`/custom?...`)
-- ⚡ **Vercel & Cloudflare Tunnel Support**: Zero-config deployment via `vercel.json`.
+Open `http://localhost:6589`. The repository still has development-only default credentials; set unique credentials and a strong random token before any controlled deployment.
 
----
+## Deployment notes
 
-## 🚀 Quick Start (Local Setup)
+`vercel.json` includes `views/**` and `public/**` in the function bundle. However, the current in-memory target store is suitable only for a single-process demonstration. A real deployment needs durable encrypted storage, signed case links, role-based access, audit logs, retention/deletion controls, rate limits, monitoring, and an approved legal operating procedure.
 
-1. Clone repository:
-   ```bash
-   git clone https://github.com/abdulaleemarshad1979/Location-Checker.git
-   cd Location-Checker
-   ```
+For a long-running SP-office installation, deploy behind HTTPS on a controlled Node server and validate the workflow with privacy, legal, and information-security officers before operational use.
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+## Verification
 
-3. Start server:
-   ```bash
-   npm start
-   ```
+```bash
+npm test
+npm run check
+```
 
-4. Open Admin Dashboard:
-   - **Local URL**: `http://localhost:6589`
-   - **Default Credentials**: `admin` / `admin`
+The included tests cover coordinate validation, zero coordinates, location source priority, stale readings, accuracy degradation, speed units, and target-ID validation.
 
----
+## Legal and ethical use
 
-## ⚡ Deployment on Vercel
-
-1. Push code to your GitHub repository.
-2. Go to [Vercel Dashboard](https://vercel.com/new).
-3. Import your GitHub repository **`Location-Checker`**.
-4. Click **Deploy** (Vercel automatically detects `vercel.json`).
-
----
-
-## ⚖️ Legal Notice
-
-This repository is published for educational demonstration of web technology capabilities. By downloading or using this repository, you agree to comply with all applicable local, national, and international laws regarding digital privacy and consent.
+Use this project only with explicit authorization, informed consent, purpose limitation, and applicable legal process. Do not impersonate third-party services or use deceptive links to obtain location data.
