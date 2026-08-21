@@ -767,7 +767,6 @@
                 generatedUrlInput.value = `${baseUrl}/yt?${params.join('&')}`;
             } else if (template === 'link') {
                 let dest = (linkUrlInput.value || '').trim() || 'https://wikipedia.org';
-                if (dest.includes('?')) dest = dest.split('?')[0];
                 const title = (linkTitleInput.value || '').trim();
 
                 const params = [];
@@ -779,7 +778,6 @@
                 const title = (customTitleInput.value || '').trim();
                 const desc = (customDescInput.value || '').trim();
                 let img = (customImgInput.value || '').trim();
-                if (img.includes('?')) img = img.split('?')[0];
 
                 const params = [];
                 if (title) params.push(`t=${encodeURIComponent(title)}`);

