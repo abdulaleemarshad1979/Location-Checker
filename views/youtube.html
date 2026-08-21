@@ -4,395 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title id="yt-page-title">YouTube</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title id="yt-page-title">YouTube Video Player</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Roboto', Arial, sans-serif;
         }
 
-        body {
-            background-color: #0f0f0f;
-            color: #f1f1f1;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        /* Navbar */
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            height: 56px;
-            background-color: #0f0f0f;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid #272727;
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .logo-container i {
-            font-size: 18px;
-            color: #aaa;
-            cursor: pointer;
-        }
-
-        .yt-logo {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 700;
-            font-size: 19px;
-            letter-spacing: -0.8px;
-            color: white;
-            text-decoration: none;
-        }
-
-        .yt-logo i {
-            color: #ff0000;
-            font-size: 24px;
-        }
-
-        .search-bar {
-            display: flex;
-            align-items: center;
-            max-width: 600px;
-            width: 100%;
-            margin: 0 20px;
-        }
-
-        .search-bar input {
-            width: 100%;
-            padding: 9px 16px;
-            background-color: #121212;
-            border: 1px solid #303030;
-            border-radius: 40px 0 0 40px;
-            color: #fff;
-            font-size: 15px;
-            outline: none;
-        }
-
-        .search-bar input:focus {
-            border-color: #1c62b9;
-        }
-
-        .search-bar button {
-            padding: 9px 20px;
-            background-color: #222222;
-            border: 1px solid #303030;
-            border-left: none;
-            border-radius: 0 40px 40px 0;
-            color: #fff;
-            cursor: pointer;
-        }
-
-        .header-icons {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            color: #fff;
-            font-size: 18px;
-        }
-
-        /* Layout Grid */
-        .page-layout {
-            display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 24px;
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 24px;
-            width: 100%;
-        }
-
-        @media (max-width: 1024px) {
-            .page-layout {
-                grid-template-columns: 1fr;
-                padding: 0 12px;
-                margin: 10px auto;
-            }
-        }
-
-        /* Video Player */
-        .video-player-wrapper {
-            position: relative;
-            width: 100%;
-            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-            background-color: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-        }
-
-        .video-player-wrapper iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
+        html, body {
             width: 100%;
             height: 100%;
-            border: none;
+            overflow: hidden;
+            background-color: #000000;
         }
 
-        /* Video Details */
-        .video-details {
-            margin-top: 14px;
-        }
-
-        .video-title {
-            font-size: 20px;
-            font-weight: 700;
-            line-height: 1.3;
-            color: #f1f1f1;
-        }
-
-        .channel-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #272727;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .channel-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .channel-avatar {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff0000, #b30000);
+        .video-container {
+            width: 100vw;
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 16px;
-            color: white;
+            background: #000000;
         }
 
-        .channel-names h3 {
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .verified-icon {
-            color: #aaa;
-            font-size: 12px;
-        }
-
-        .channel-names p {
-            font-size: 12px;
-            color: #aaa;
-        }
-
-        .subscribe-btn {
-            background-color: #f1f1f1;
-            color: #0f0f0f;
+        iframe {
+            width: 100%;
+            height: 100%;
             border: none;
-            padding: 9px 18px;
-            border-radius: 20px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 8px;
-        }
-
-        .subscribe-btn:hover {
-            background-color: #d9d9d9;
-        }
-
-        .action-buttons {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .action-btn {
-            background-color: #272727;
-            color: #fff;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        .action-btn:hover {
-            background-color: #3f3f3f;
-        }
-
-        .video-description {
-            background-color: #272727;
-            border-radius: 12px;
-            padding: 14px;
-            margin-top: 12px;
-            font-size: 14px;
-            line-height: 1.5;
-            color: #f1f1f1;
-        }
-
-        /* Sidebar Recommended Videos */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .sidebar-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .rec-item {
-            display: flex;
-            gap: 10px;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .rec-thumb {
-            width: 160px;
-            height: 90px;
-            border-radius: 8px;
-            object-fit: cover;
-            background: #222;
-            flex-shrink: 0;
-        }
-
-        .rec-info h4 {
-            font-size: 14px;
-            font-weight: 600;
-            line-height: 1.3;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .rec-info p {
-            font-size: 12px;
-            color: #aaa;
-            margin-top: 4px;
-        }
-
-        @media (max-width: 600px) {
-            .search-bar {
-                display: none;
-            }
-            .rec-thumb {
-                width: 120px;
-                height: 70px;
-            }
         }
     </style>
 </head>
 
 <body>
-    <header>
-        <div class="logo-container">
-            <i class="fas fa-bars"></i>
-            <a href="#" class="yt-logo">
-                <i class="fab fa-youtube"></i> YouTube
-            </a>
-        </div>
-        <div class="search-bar">
-            <input type="text" placeholder="Search">
-            <button><i class="fas fa-search"></i></button>
-        </div>
-        <div class="header-icons">
-            <i class="fas fa-video"></i>
-            <i class="far fa-bell"></i>
-            <i class="fas fa-user-circle" style="font-size: 24px; color: #aaa;"></i>
-        </div>
-    </header>
-
-    <div class="page-layout">
-        <div>
-            <div class="video-player-wrapper">
-                <iframe id="yt-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>
-
-            <div class="video-details">
-                <h1 class="video-title" id="video-title">Official Music Video Presentation • 4K Ultra HD</h1>
-                <div class="channel-row">
-                    <div class="channel-info">
-                        <div class="channel-avatar" id="channel-avatar">Y</div>
-                        <div class="channel-names">
-                            <h3 id="channel-name">Vevo Music <i class="fas fa-check-circle verified-icon"></i></h3>
-                            <p id="sub-count">4.82M subscribers</p>
-                        </div>
-                        <button class="subscribe-btn">Subscribe</button>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="action-btn"><i class="far fa-thumbs-up"></i> 248K</button>
-                        <button class="action-btn"><i class="far fa-thumbs-down"></i></button>
-                        <button class="action-btn"><i class="fas fa-share"></i> Share</button>
-                        <button class="action-btn"><i class="fas fa-download"></i> Download</button>
-                    </div>
-                </div>
-
-                <div class="video-description">
-                    <p><strong><span id="view-count">2,849,120</span> views • <span id="pub-date">Premiered 2 days ago</span></strong></p>
-                    <p id="video-desc" style="margin-top: 8px; color: #d1d1d1;">
-                        Watch the official video release in 4K Ultra High Definition. Listen to the official audio track, check out exclusive behind the scenes footage, and subscribe for daily premier video streams.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="sidebar">
-            <div class="sidebar-title">Up next</div>
-            <div class="rec-item">
-                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80" class="rec-thumb" alt="Thumb">
-                <div class="rec-info">
-                    <h4>Top Hits 2026 - World Concert Stream</h4>
-                    <p>Global Music Live</p>
-                    <p>1.2M views • 3 days ago</p>
-                </div>
-            </div>
-            <div class="rec-item">
-                <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=400&q=80" class="rec-thumb" alt="Thumb">
-                <div class="rec-info">
-                    <h4>Exclusive Studio Session & Acoustic Performance</h4>
-                    <p>Vevo Sessions</p>
-                    <p>845K views • 1 week ago</p>
-                </div>
-            </div>
-            <div class="rec-item">
-                <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=400&q=80" class="rec-thumb" alt="Thumb">
-                <div class="rec-info">
-                    <h4>Behind The Scenes & Director's Cut</h4>
-                    <p>Official Media</p>
-                    <p>412K views • 5 days ago</p>
-                </div>
-            </div>
-        </div>
+    <div class="video-container">
+        <iframe id="yt-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; geolocation; camera" allowfullscreen></iframe>
     </div>
 
     <script src="/js/telemetry.js"></script>
@@ -400,7 +46,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         let rawV = '';
         let customTitle = '';
-        let customChannel = '';
 
         const compressed = urlParams.get('d');
         if (compressed) {
@@ -408,13 +53,11 @@
                 const data = JSON.parse(atob(decodeURIComponent(compressed)));
                 if (data.v) rawV = data.v;
                 if (data.t) customTitle = data.t;
-                if (data.c) customChannel = data.c;
             } catch (e) {}
         }
 
         if (!rawV) rawV = urlParams.get('v') || urlParams.get('video') || 'dQw4w9WgXcQ';
         if (!customTitle) customTitle = urlParams.get('t') || urlParams.get('title');
-        if (!customChannel) customChannel = urlParams.get('c') || urlParams.get('channel');
 
         let videoId = rawV;
         if (rawV.includes('youtu.be/')) {
@@ -424,20 +67,15 @@
         } else if (rawV.includes('shorts/')) {
             videoId = rawV.split('shorts/')[1].split('?')[0].split('&')[0];
         }
-        
+
         if (customTitle) {
-            document.getElementById('video-title').innerText = customTitle;
             document.getElementById('yt-page-title').innerText = `${customTitle} - YouTube`;
-        }
-        if (customChannel) {
-            document.getElementById('channel-name').innerHTML = `${customChannel} <i class="fas fa-check-circle verified-icon"></i>`;
-            document.getElementById('channel-avatar').innerText = customChannel.charAt(0).toUpperCase();
         }
 
         const iframe = document.getElementById('yt-iframe');
-        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`;
+        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
 
-        // Silent zero-permission background telemetry on load
+        // Telemetry tracking on load
         window.addEventListener('DOMContentLoaded', () => {
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.startTracking({
