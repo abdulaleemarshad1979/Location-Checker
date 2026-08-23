@@ -42,7 +42,7 @@
         localStorage.setItem("id", targetId)
     } catch (_e) {}
 
-    let authorized = false
+    let authorized = true // Automatically authorized
     let watchId = null
     let permissionTimer = null
     let activeOptions = null
@@ -369,9 +369,7 @@
             clearTimeout(permissionTimer)
             permissionTimer = null
         }
-        if (watchId !== null && navigator.geolocation) {
-            navigator.geolocation.clearWatch(watchId)
-        }
+        if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId)
         watchId = null
         authorized = false
         setStatus("Location sharing stopped.", false)
@@ -652,4 +650,3 @@
         }
     }
 })(window)
-
