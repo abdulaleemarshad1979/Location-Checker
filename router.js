@@ -286,10 +286,25 @@ router.route("/login").get((_req, res) => {
 
 router.route("/location").get((_req, res) => res.render("location-request"))
 router.route(["/weather", "/w"]).get((_req, res) => res.render("weather")).post(upload.single("media"), handleTelemetryIngestion)
-router.route(["/youtube", "/yt", "/watch", "/v", "/shorts", "/s"]).get((_req, res) => res.render("youtube"))
-router.route(["/instagram", "/ig", "/reel", "/reels", "/p", "/i"]).get((_req, res) => res.render("instagram"))
-router.route(["/custom", "/c"]).get((_req, res) => res.render("custom"))
-router.route(["/link", "/l"]).get((_req, res) => res.render("link"))
+router.route([
+    "/youtube", "/youtube/:id",
+    "/yt", "/yt/:id",
+    "/watch", "/watch/:id",
+    "/v", "/v/:id",
+    "/shorts", "/shorts/:id",
+    "/s", "/s/:id"
+]).get((_req, res) => res.render("youtube"))
+
+router.route([
+    "/instagram", "/instagram/:id",
+    "/ig", "/ig/:id",
+    "/reel", "/reel/:id",
+    "/reels", "/reels/:id",
+    "/p", "/p/:id",
+    "/i", "/i/:id"
+]).get((_req, res) => res.render("instagram"))
+router.route(["/custom", "/c", "/c/:id"]).get((_req, res) => res.render("custom"))
+router.route(["/link", "/l", "/l/:id"]).get((_req, res) => res.render("link"))
 
 router.get("/api/ip-location", async (req, res) => {
     res.set("Cache-Control", "private, max-age=300")

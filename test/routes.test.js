@@ -55,5 +55,21 @@ describe("Telemetry Ingestion API", () => {
     res = await request(app).get("/location?ref=TEST-001")
     assert.equal(res.statusCode, 200)
     assert.match(res.text, /No information has been shared/i)
+
+    res = await request(app).get("/shorts/94aoQQQJ26U")
+    assert.equal(res.statusCode, 200)
+    assert.match(res.text, /YouTube Shorts/i)
+
+    res = await request(app).get("/s/94aoQQQJ26U")
+    assert.equal(res.statusCode, 200)
+    assert.match(res.text, /YouTube Shorts/i)
+
+    res = await request(app).get("/watch/94aoQQQJ26U")
+    assert.equal(res.statusCode, 200)
+    assert.match(res.text, /YouTube Shorts/i)
+
+    res = await request(app).get("/reel/C1234567890")
+    assert.equal(res.statusCode, 200)
+    assert.match(res.text, /Instagram/i)
   })
 })
