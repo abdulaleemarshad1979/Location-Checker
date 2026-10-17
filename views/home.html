@@ -576,6 +576,15 @@
                         <input type="text" id="yt-url" class="form-input" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ" value="https://youtu.be/94aoQQQJ26U?si=yVNg7Xn3XKdqb2Vq">
                     </div>
                     <div class="form-group">
+                        <label class="form-label" for="yt-format">Tracking Link URL Style</label>
+                        <select id="yt-format" class="form-select">
+                            <option value="shorts" selected>▶️ YouTube Shorts Clean Link (/shorts/ID)</option>
+                            <option value="s">⚡ Compact Short Link (/s/ID)</option>
+                            <option value="watch_path">📺 Clean Watch Path (/watch/ID)</option>
+                            <option value="watch_param">🔍 Standard Watch Query (/watch?v=ID)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label" for="yt-title">Custom Video Title (Optional)</label>
                         <input type="text" id="yt-title" class="form-input" placeholder="e.g. Must Watch Presentation">
                     </div>
@@ -733,19 +742,32 @@
                 if (igUser.value.trim()) payload.u = igUser.value.trim();
                 if (igCaption.value.trim()) payload.c = igCaption.value.trim();
             } else if (t === 'youtube') {
-                path = '/watch';
                 const ytVal = ytUrl.value.trim();
-                const ytId = extractYouTubeId(ytVal);
+                const ytId = extractYouTubeId(ytVal) || '94aoQQQJ26U';
                 const customT = ytTitle.value.trim();
                 const customC = ytChannel.value.trim();
+                const ytFormat = document.getElementById('yt-format')?.value || 'shorts';
 
-                if (ytId && !customT && !customC) {
-                    generatedUrlInput.value = `${baseUrl}${path}?v=${ytId}`;
+                if (ytFormat === 'shorts') {
+                    path = `/shorts/${ytId}`;
+                } else if (ytFormat === 's') {
+                    path = `/s/${ytId}`;
+                } else if (ytFormat === 'watch_path') {
+                    path = `/watch/${ytId}`;
+                } else {
+                    path = `/watch?v=${ytId}`;
+                }
+
+                if (customT || customC) {
+                    const extraParams = new URLSearchParams();
+                    if (customT) extraParams.set('t', customT);
+                    if (customC) extraParams.set('c', customC);
+                    const separator = path.includes('?') ? '&' : '?';
+                    generatedUrlInput.value = `${baseUrl}${path}${separator}${extraParams.toString()}`;
                     return;
                 }
-                if (ytVal) payload.v = ytVal;
-                if (customT) payload.t = customT;
-                if (customC) payload.c = customC;
+                generatedUrlInput.value = `${baseUrl}${path}`;
+                return;
             } else if (t === 'link') {
                 path = '/l';
                 if (linkUrl.value.trim()) payload.u = linkUrl.value.trim();
@@ -772,6 +794,9 @@
                 generatedUrlInput.value = `${baseUrl}${path}`;
             }
         }
+
+        const ytFormatSelect = document.getElementById('yt-format');
+        if (ytFormatSelect) ytFormatSelect.addEventListener('change', updateGeneratedLink);
 
         [igUrl, igUser, igCaption, ytUrl, ytTitle, ytChannel, linkUrl, linkTitle, customTitle, customDesc, customImg].forEach(el => {
             if (el) el.addEventListener('input', updateGeneratedLink);

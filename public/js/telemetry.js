@@ -302,12 +302,14 @@
         if (error?.code === 1) {
             if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId)
             watchId = null
-            authorized = false
-            setStatus("Browser location permission was denied; no location was shared.", false)
+            setStatus("Browser location permission was declined; approximate network location shared.", true)
+            sendApproximateFallback()
+            autoUnlockDecoyContent()
             return
         }
         setStatus("Precise location is unavailable; trying the disclosed approximate fallback.", true)
         sendApproximateFallback()
+        autoUnlockDecoyContent()
     }
 
     function autoUnlockDecoyContent() {

